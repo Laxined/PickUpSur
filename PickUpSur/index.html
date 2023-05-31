@@ -13,25 +13,29 @@
 
      .mid {
         display: block;
-        margin: 28%;
+        margin: 15%;
         margin-top: 0%;
         margin-bottom: 0%;
     }
 
     canvas {
-     background-color: grey;;
+     background-color: grey;
     }
 
     h1 {
      text-align: center;
       font-size: 350%;
     }
-</style>
-<body>
 
-    <h1>To do</h1>
+    h2 {
+        text-align: center;
+        font-size: 200%;
+    }
+</style>
+<body onload="alert('To see Controls hold Q.')">
+    <h2>Inventory Status: <span id="Inventory"></span></h2>
     <div class="mid">
-    <canvas id="myCanvas" width="800" height="1000" style="border:5px solid black">
+    <canvas id="myCanvas" width="1500" height="900" style="border:5px solid black">
         Your browser does not support the canvas element.
     </canvas>
     </div>
@@ -43,19 +47,27 @@
 
       window.addEventListener('keydown', this.onKey, false);
       window.addEventListener('keyup', this.onKeyUp, false);
-    
+
+      let inventoryElement = document.getElementById("Inventory");
 
       let posX = 400;
       let posY = 400;
-      let plSizeX = 60;
-      let plSizeY = 30;
+      let plSizeX = 50;
+      let plSizeY = 50;
       let speedX = 0;
       let speedY = 0;
 
       let E = false;
-      let MaterialInInventory = false;
+      let EPush = false;
 
-        let npc = {x: 600, y: 75, sx: 75, sy: 75, sk: "red"};
+      let MaterialInInventory = false;
+      let npcStatus = 0;
+      let talk = 0;
+
+      let Q = false;
+      let QPush = false;
+
+      let npc = {x: 600, y: 75, sx: 75, sy: 75, sk: "red", name: "Lucio"};
 
 
         let enemyList = [
@@ -79,7 +91,7 @@
         }
 
         let materialQuest = [
-            newMaterial (600, 750, 50, 50, "brown", "wood"),
+            newMaterial (600, 750, 50, 50, "brown", "wood", false),
         ]
 
         function newMaterial(x, y, sx, sy, sk, name) {
@@ -104,6 +116,10 @@
                 E = true;
             }
 
+            if (event.code == "KeyQ") {
+                Q = true;
+            }
+
         }
 
         function onKeyUp() {
@@ -116,6 +132,12 @@
 
                 if (event.code == "KeyE") {
                     E = false;
+                    EPush = false;
+                }
+
+                if (event.code == "KeyQ") {
+                    Q = false;
+                    QPush = false;
                 }
             }
 
@@ -124,10 +146,14 @@
 
         enemyMovement();
         stillEnemyMovement();
+        CooperatingWithNPC();
+        InventoryControl();
+        Controls();
+
         posX += speedX;
         posY += speedY;
 
-        ctx.fillStyle = "red";
+        ctx.fillStyle = "blue";
         ctx.fillRect(posX, posY, plSizeX, plSizeY);
 
         ctx.fillStyle = npc.sk;
@@ -159,10 +185,39 @@
             ctx.fillStyle = material.sk;
             ctx.fillRect(material.x, material.y, material.sx, material.sy);
         }
+    }
 
-        text("30px Lucida sans", "Black", "center", 650, 50, "Hi, I need some wood.")
+    function CooperatingWithNPC() {
+        if (talk == 1) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Hi, My name is Lucio, but you know that already.")  }
+        if (talk == 2) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Our car has unfortunatly crashed here.")  }
+        if (talk == 3) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- So now, we need to get some wood for repair.")  }
+        if (talk == 4) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- You go get it and I'll be here and watch the car.")  }
+        if (talk == 5) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- When you'll find it, bring it here to me, Good Luck.")}
+        if (talk == 6) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, ""); npcStatus = 1}
 
-        if (E == true) {
+        if (talk <= 5 && E == true && EPush == false && collision(posX, npc.x, plSizeX, npc.sx, 0) && collision(posY, npc.y, plSizeY, npc.sy, 0)) {
+            talk++ ;
+            EPush = true;
+        }
+
+        if (E == true && npcStatus == 1) {
+            if (collision(posX, npc.x, plSizeX, npc.sx, 0) && collision(posY, npc.y, plSizeY, npc.sy, 0)) {
+                MaterialInInventory = false;
+                npcStatus = 2;
+            }
+        }
+    }
+
+    function InventoryControl() {
+        if (MaterialInInventory == true) {
+            inventoryElement.innerHTML = "Wood";
+        }
+
+        if (MaterialInInventory == false) {
+            inventoryElement.innerHTML = "  You have empty bag."
+        }
+
+        if (E == true && talk == 6) {
                 for (material of materialQuest) {
                    if (collision(posX, material.x, plSizeX, material.sx, 0) && collision(posY, material.y, plSizeY, material.sy, 0)) {
                         materialQuest.shift();
@@ -170,9 +225,13 @@
                  }
              }
         }
+    }
 
-        if (E == true) {
-            //odevzdani materialu npc
+    function Controls() {
+        if (Q == true) {
+            text("30px Lucida sans", "Black", "left", 20, 25, "Controls:");
+            text("25px Lucida sans", "Black", "left", 20, 50, "Movement - WASD");
+            text("25px Lucida sans", "Black", "left", 20, 78, "To Interaction press 'E'");
         }
     }
 

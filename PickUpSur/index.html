@@ -11,11 +11,9 @@
         font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
     }
 
-     .mid {
+     #myCanvas {
         display: block;
-        margin: 15%;
-        margin-top: 0%;
-        margin-bottom: 0%;
+        margin: 19px auto 0px auto;
     }
 
     canvas {
@@ -66,6 +64,7 @@
 
       let Q = false;
       let QPush = false;
+      let level = 1;
 
       let npc = {x: 600, y: 75, sx: 75, sy: 75, sk: "red", name: "Lucio"};
 
@@ -188,22 +187,37 @@
     }
 
     function CooperatingWithNPC() {
-        if (talk == 1) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Hi, My name is Lucio, but you know that already.")  }
-        if (talk == 2) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Our car has unfortunatly crashed here.")  }
-        if (talk == 3) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- So now, we need to get some wood for repair.")  }
-        if (talk == 4) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- You go get it and I'll be here and watch the car.")  }
-        if (talk == 5) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- When you'll find it, bring it here to me, Good Luck.")}
-        if (talk == 6) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, ""); npcStatus = 1}
+        if (npcStatus == 0) {
+            if (talk == 1) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Hi, My name is Lucio, but you know that already.")  }
+            if (talk == 2) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Our car has unfortunatly crashed here.")  }
+            if (talk == 3) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- So now, we need to get some wood for repair.")  }
+            if (talk == 4) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- You go get it and I'll be here and watch the car.")  }
+            if (talk == 5) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- When you'll find it, bring it here to me, Good Luck.")}
+            if (talk == 6) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, ""); npcStatus = 1} 
+        }
+
+        if (npcStatus == 2) {
+              if (talk == 1) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Oh, you really did it! Whisper:'I didn't really expect that.'")  }
+              if (talk == 2) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Now we can go! When you're ready, come here and press'E'.")  }
+              if (talk == 3) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, ""); npcStatus = 3}
+         }
+
+         if (npcStatus == 3 && E == true) {
+            if (collision(posX, npc.x, plSizeX, npc.sx, 0) && collision(posY, npc.y, plSizeY, npc.sy, 0)) {
+                level = 2;
+            }
+         }
 
         if (talk <= 5 && E == true && EPush == false && collision(posX, npc.x, plSizeX, npc.sx, 0) && collision(posY, npc.y, plSizeY, npc.sy, 0)) {
             talk++ ;
             EPush = true;
         }
 
-        if (E == true && npcStatus == 1) {
+        if (E == true && npcStatus == 1 && MaterialInInventory == true) {
             if (collision(posX, npc.x, plSizeX, npc.sx, 0) && collision(posY, npc.y, plSizeY, npc.sy, 0)) {
                 MaterialInInventory = false;
                 npcStatus = 2;
+                talk = 0;
             }
         }
     }
@@ -232,6 +246,8 @@
             text("30px Lucida sans", "Black", "left", 20, 25, "Controls:");
             text("25px Lucida sans", "Black", "left", 20, 50, "Movement - WASD");
             text("25px Lucida sans", "Black", "left", 20, 78, "To Interaction press 'E'");
+            text("25px Lucida sans", "Black", "left", 20, 106, "To pick up something press 'E'");
+            text("25px Lucida sans", "Black", "left", 20, 132, "You can have only 1 thing in Inventory.");
         }
     }
 

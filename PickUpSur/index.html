@@ -64,24 +64,49 @@
 
       let Q = false;
       let QPush = false;
-      let level = 1;
+      let levl = 1;
 
-      let npc = {x: 600, y: 75, sx: 75, sy: 75, sk: "red", name: "Lucio"};
+      let level = {
+        tutorial: {
+            background: "to do",
+
+        npc: [
+                {x:600, y:75, sx:75, sy:75, skin:"red", name:"Lucio", talk1: [
+                            { a: ""},
+                            { b: "-- Hi, My name is Lucio, but you know that already."},
+                            { c: "-- Our car has unfortunatly crashed here."},
+                            { d: "-- So now, we need to get some wood for repair."},
+                            { e: "-- You go get it and I'll be here and watch the car."},
+                            { f: "-- When you'll find it, bring it here to me, Good Luck."},
+                          ], 
+                    talk2: [
+                            {a: ""},
+                            {b: "-- Oh, you really did it! Whisper:'I didn't really expect that.'"},
+                            {c: "-- Now we can go! When you're ready, come here and press'E'."},
+                    ]
+                }],
+        enemies: [
+                {enemyList: [
+                    newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
+                    newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
+                    newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
+                    newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
+                    ],
+                stillEnemyList: [
+                    newStillEnemy(0, 550, 83, 50, 2, "black"),
+                    newStillEnemy(500, 550, 83, 50, 2, "black"),
+                    ]}
+                ],
+        items: [
+         newMaterial (600, 750, 50, 50, "brown", "wood"),
+        ]
+
+        }
+      }
+
+      let active = level.tutorial;
 
       let sentenc = "";
-      
-      let speech1 = {a: "",
-                     b: "-- Hi, My name is Lucio, but you know that already.",
-                     c: "-- Our car has unfortunatly crashed here.",
-                     d: "-- So now, we need to get some wood for repair.",
-                     e: "-- You go get it and I'll be here and watch the car.",
-                     f: "-- When you'll find it, bring it here to me, Good Luck.",
-                    }
-
-      let speech2 = {a: "",
-                     b: "-- Oh, you really did it! Whisper:'I didn't really expect that.'",  
-                     c: "-- Now we can go! When you're ready, come here and press'E'.",
-                    }    
 
       let controls = [
         {x:20, y:25, al:"40px Lucida sans", tl:"Controls:"},
@@ -91,29 +116,13 @@
         {x:20, y:132, al:"25px Lucida sans", tl:"You can have only 1 thing in Inventory."},
       ]
 
-        let enemyList = [
-            newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
-            newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
-            newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
-            newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
-        ]
-
         function newEnemy(x, y, sx, sy, fr, ang, sk, sp) {
             return {x:x, y:y, sx:sx, sy:sy, fr:fr, ang:ang, sk:sk, sp:sp}
         }
 
-        let stillEnemyList = [
-            newStillEnemy(0, 550, 83, 50, 2, "black"),
-            newStillEnemy(500, 550, 83, 50, 2, "black"),
-        ]
-
         function newStillEnemy(x, y, sx, sy, sp, sk) {
             return {x:x, y:y, sx:sx, sy:sy, sp:sp, sk:sk}
         }
-
-        let materialQuest = [
-            newMaterial (600, 750, 50, 50, "brown", "wood", false),
-        ]
 
         function newMaterial(x, y, sx, sy, sk, name) {
             return {x:x, y:y, sx:sx, sy:sy, sk:sk, name:name}
@@ -165,12 +174,12 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
-        enemyMovement();
-        stillEnemyMovement();
-        CooperatingWithNPC();
-        InventoryControl();
-        Controls();
-        collisionWithEnemy();
+        enemyMovement();  //hybani random enemy
+        stillEnemyMovement(); //hybani stillEnemy
+        CooperatingWithNPC(); //npc veci
+        InventoryControl();  // inv veci
+        Controls();  //controls
+        collisionWithEnemy();  //kolize
 
         positionX += speedX;
         positionY += speedY;
@@ -194,16 +203,19 @@
 			    positionX -= 8;
 			}
 
-        for (stillEnemy of stillEnemyList) {
+        for (stillEnemy of active.enemies.stillEnemyList) {
             ctx.fillStyle = stillEnemy.sk;
             ctx.fillRect(stillEnemy.x, stillEnemy.y, stillEnemy.sx, stillEnemy.sy);
         }
-        for (enemy of enemyList) {
+        for (enemy of active.enemies.enemyList) {
             ctx.fillStyle = enemy.sk;
             ctx.fillRect(enemy.x, enemy.y, enemy.sx, enemy.sy);
         }
-
-        for (material of materialQuest) {
+        for (npc of active.npc) {
+            ctx.fillStyle = npc.sk;
+            ctx.fillRect(npc.x, npc.y, npc.sx, npc.sy);
+        }
+        for (material of active.items) {
             ctx.fillStyle = material.sk;
             ctx.fillRect(material.x, material.y, material.sx, material.sy);
         }
@@ -282,13 +294,13 @@
     }
 
     function collisionWithEnemy() {
-        for (enemy of enemyList) {
+        for (enemy of active.enemies.enemyList) {
             if (collision(positionX, enemy.x, plSzX, enemy.sx, 0) && collision(positionY, enemy.y, plSzY, enemy.sy, 0)) {
                 alert("test");
             }
         }
 
-       for (stillEnemy of stillEnemyList) {
+       for (stillEnemy of active.enemies.stillEnemyList) {
             if (collision(positionX, stillEnemy.x, plSzX, stillEnemy.sx, 0) && collision(positionY, stillEnemy.y, plSzY, stillEnemy.sy, 0)) {
                 alert("test");
             }
@@ -304,7 +316,7 @@
     }
 
     function enemyMovement() {
-        for (enemy of enemyList) {
+        for (enemy of active.enemies.enemyList) {
             if (!enemy.fr) {
             enemy.x += Math.cos(enemy.ang) * enemy.sp;
             enemy.y += Math.sin(enemy.ang) * enemy.sp;
@@ -322,7 +334,7 @@
     }
 
     function stillEnemyMovement() {
-        for (stillEnemy of stillEnemyList) {
+        for (stillEnemy of active.enemies.stillEnemyList) {
             stillEnemy.x += stillEnemy.sp;
             if (stillEnemy.x >= canvas.width) stillEnemy.x = 0;
         }

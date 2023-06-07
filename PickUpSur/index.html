@@ -86,7 +86,7 @@
         one: {
             background: "do to",
             npc: [
-                {x:600, y:75, sx:75, sy:75, sk:"blue", name:"Lucio", LengthOfTalk2:4, speech: [
+                {x:600, y:75, sx:75, sy:75, sk:"red", name:"Lucio", LengthOfTalk2:4, speech: [
                         { q: "", d: ""},
                         { q: "-- Damn it! We didn't get far and our car is already broken again!", d: "Aaa, you are finally back!"},
                         { q: "-- This time we have no fuel.", d: "You got it! Nice!"},
@@ -94,33 +94,52 @@
                         { q: "Even though i would like to go there, you already have experience with this."},
                         { q: "So, be aware of the monsters and uh... Good Luck"}
                 ]}],
-            enemies: {enemyList: [
-                    newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
-                    newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
-                    newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
-                    newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
-                    ],
+            enemies: {enemyList: [],
                 stillEnemyList: [
                     newStillEnemy(0, 550, 83, 50, 2, "black"),
+                    newStillEnemy(1000, 550, 83, 50, 2, "black"),
+                    newStillEnemy(1500, 550, 83, 50, 2, "black"),
+                    newStillEnemy(250, 550, 83, 50, 2, "black"),
                     newStillEnemy(500, 550, 83, 50, 2, "black"),
+                    newStillEnemy(890, 550, 83, 50, 2, "black"),
                     ]},
             items: [],
+        },
+        two: {
+            background: "to do",
+            npc: [
+                {x:600, y:75, sx:75, sy:75, sk:"red", name:"Lucio", LengthOfTalk2:6, speech: [
+                            { q: "", d: ""},
+                            { q: "I don't know, how are you, but i am very hungry.", d: "Aaaa, There you are. Where have you been?"},
+                            { q: "Luckily for me, ugh i mean us, there is an old building with supplies.", d: "I am waiting here for like i don't know, hours."},
+                            { q: "Go there and bring here something", d: "But, did you found something?"},
+                            { q: "But be cautious, i don't want anything to happen to you.", d: "Nice, give it to me, i almost died of hunger."},
+                            { q: "But be quick, i am starting starving.", d: "Thank you very much, now, we can contionue our journey."},
+                ]}],
+                enemies: {enemyList: [
+                    newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
+                    newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
+                    newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
+                    ],
+                stillEnemyList: []},
+            items: [],    
         }
       }
 
       level.tutorial.items.push(newItem(600, 750, 50, 50, "brown", "Wood"));   //pushování itemů do items
       level.one.items.push(newItem(600, 750, 50, 50, "green", "Fuel"));
+      level.two.items.push(newItem(600, 750, 50, 50, "orange", "Supplies"));
 
       let active = level.tutorial;
 
       let sentence = "";
 
       let controls = [
-        {x:20, y:25, al:"40px Lucida sans", tl:"Controls:"},
-        {x:20, y:50, al:"25px Lucida sans", tl:"Movement - WASD"},
-        {x:20, y:78, al:"25px Lucida sans", tl:"To Interaction press 'E'"},
-        {x:20, y:106, al:"25px Lucida sans", tl:"To pick up something press 'E'"},
-        {x:20, y:132, al:"25px Lucida sans", tl:"You can have only 1 thing in Inventory."},
+        {x:1480, y:35, al:"40px Lucida sans", tl:"Controls"},
+        {x:1480, y:60, al:"25px Lucida sans", tl:"Movement - WASD"},
+        {x:1480, y:88, al:"25px Lucida sans", tl:"To Interaction press 'E'"},
+        {x:1480, y:116, al:"25px Lucida sans", tl:"To pick up something press 'E'"},
+        {x:1480, y:142, al:"25px Lucida sans", tl:"You can have only 1 thing in Inventory."},
       ]
 
         function newEnemy(x, y, sx, sy, fr, ang, sk, sp) {
@@ -226,6 +245,7 @@
 
         if (levl == 0) active = level.tutorial;
         if (levl == 1) active = level.one;
+        if (levl == 2) active = level.two;
     }
 
     function CooperatingWithNPC() {
@@ -246,7 +266,7 @@
 
          if (npcStatus == 3 && E == true) {
             if (collision(positionX, npc.x, plSzX, npc.sx, 0) && collision(positionY, npc.y, plSzY, npc.sy, 0)) {   //konec levelu
-                levl = 1;
+                levl++;
                 npcStatus = 0;
                 talk = 0;
             }
@@ -293,7 +313,7 @@
     function Controls() { //napsané controls
         if (Q == true) {
             for (control of controls) {
-                text(control.al, "black", "left", control.x, control.y, control.tl);
+                text(control.al, "black", "right", control.x, control.y, control.tl);
          }
         }
     }
@@ -308,13 +328,13 @@
     function collisionWithEnemy() { //kolize s random enemy
         for (enemy of active.enemies.enemyList) {
             if (collision(positionX, enemy.x, plSzX, enemy.sx, 0) && collision(positionY, enemy.y, plSzY, enemy.sy, 0)) {
-                alert("test");
+                alert("Game Over");
             }
         }
 
        for (stillEnemy of active.enemies.stillEnemyList) { //kolize se stillEnemy
             if (collision(positionX, stillEnemy.x, plSzX, stillEnemy.sx, 0) && collision(positionY, stillEnemy.y, plSzY, stillEnemy.sy, 0)) {
-                alert("test");
+                alert("Game Over");
             }
         }
     }

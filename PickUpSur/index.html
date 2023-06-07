@@ -48,10 +48,10 @@
 
       let inventoryElement = document.getElementById("Inventory");
 
-      let posX = 400;
-      let posY = 400;
-      let plSizeX = 50;
-      let plSizeY = 50;
+      let positionX = 400;
+      let positionY = 400;
+      let plSzX = 50;
+      let plSzY = 50;
       let speedX = 0;
       let speedY = 0;
 
@@ -68,6 +68,28 @@
 
       let npc = {x: 600, y: 75, sx: 75, sy: 75, sk: "red", name: "Lucio"};
 
+      let sentenc = "";
+      
+      let speech1 = {a: "",
+                     b: "-- Hi, My name is Lucio, but you know that already.",
+                     c: "-- Our car has unfortunatly crashed here.",
+                     d: "-- So now, we need to get some wood for repair.",
+                     e: "-- You go get it and I'll be here and watch the car.",
+                     f: "-- When you'll find it, bring it here to me, Good Luck.",
+                    }
+
+      let speech2 = {a: "",
+                     b: "-- Oh, you really did it! Whisper:'I didn't really expect that.'",  
+                     c: "-- Now we can go! When you're ready, come here and press'E'.",
+                    }    
+
+      let controls = [
+        {x:20, y:25, al:"40px Lucida sans", tl:"Controls:"},
+        {x:20, y:50, al:"25px Lucida sans", tl:"Movement - WASD"},
+        {x:20, y:78, al:"25px Lucida sans", tl:"To Interaction press 'E'"},
+        {x:20, y:106, al:"25px Lucida sans", tl:"To pick up something press 'E'"},
+        {x:20, y:132, al:"25px Lucida sans", tl:"You can have only 1 thing in Inventory."},
+      ]
 
         let enemyList = [
             newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
@@ -76,8 +98,8 @@
             newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
         ]
 
-        function newEnemy(x, y, szX, szY, fr, ang, sk, sp) {
-            return {x: x, y: y, szX: szX, szY: szY, fr: fr, ang: ang, sk: sk, sp:sp}
+        function newEnemy(x, y, sx, sy, fr, ang, sk, sp) {
+            return {x:x, y:y, sx:sx, sy:sy, fr:fr, ang:ang, sk:sk, sp:sp}
         }
 
         let stillEnemyList = [
@@ -148,27 +170,28 @@
         CooperatingWithNPC();
         InventoryControl();
         Controls();
+        collisionWithEnemy();
 
-        posX += speedX;
-        posY += speedY;
+        positionX += speedX;
+        positionY += speedY;
 
         ctx.fillStyle = "blue";
-        ctx.fillRect(posX, posY, plSizeX, plSizeY);
+        ctx.fillRect(positionX, positionY, plSzX, plSzY);
 
         ctx.fillStyle = npc.sk;
         ctx.fillRect(npc.x, npc.y, npc.sx, npc.sy);
 
-        if (posY <= 0){
-			    posY += 8;
+        if (positionY <= 0){
+			    positionY += 8;
 			}
-			if (posY + plSizeY >= canvas.height) {
-			    posY -= 8;
+			if (positionY + plSzY >= canvas.height) {
+			    positionY -= 8;
 			}
-			if (posX <= 0) {
-			    posX += 8;
+			if (positionX <= 0) {
+			    positionX += 8;
 			}
-			if (posX + plSizeX >= canvas.width) {
-			    posX -= 8;
+			if (positionX + plSzX >= canvas.width) {
+			    positionX -= 8;
 			}
 
         for (stillEnemy of stillEnemyList) {
@@ -177,7 +200,7 @@
         }
         for (enemy of enemyList) {
             ctx.fillStyle = enemy.sk;
-            ctx.fillRect(enemy.x, enemy.y, enemy.szX, enemy.szY);
+            ctx.fillRect(enemy.x, enemy.y, enemy.sx, enemy.sy);
         }
 
         for (material of materialQuest) {
@@ -188,33 +211,35 @@
 
     function CooperatingWithNPC() {
         if (npcStatus == 0) {
-            if (talk == 1) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Hi, My name is Lucio, but you know that already.")  }
-            if (talk == 2) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Our car has unfortunatly crashed here.")  }
-            if (talk == 3) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- So now, we need to get some wood for repair.")  }
-            if (talk == 4) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- You go get it and I'll be here and watch the car.")  }
-            if (talk == 5) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- When you'll find it, bring it here to me, Good Luck.")}
-            if (talk == 6) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, ""); npcStatus = 1} 
+            if (talk == 1) { sentenc = speech1.b  }
+            if (talk == 2) { sentenc = speech1.c }
+            if (talk == 3) { sentenc = speech1.d }
+            if (talk == 4) { sentenc = speech1.e }
+            if (talk == 5) { sentenc = speech1.f }
+            if (talk == 6) { sentenc = speech1.a; npcStatus = 1} 
         }
 
+        text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, sentenc)
+
         if (npcStatus == 2) {
-              if (talk == 1) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Oh, you really did it! Whisper:'I didn't really expect that.'")  }
-              if (talk == 2) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, "-- Now we can go! When you're ready, come here and press'E'.")  }
-              if (talk == 3) { text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, ""); npcStatus = 3}
+              if (talk == 1) { sentenc = speech2.b }
+              if (talk == 2) { sentenc = speech2.c }
+              if (talk == 3) { sentenc = speech2.a ; npcStatus = 3}
          }
 
          if (npcStatus == 3 && E == true) {
-            if (collision(posX, npc.x, plSizeX, npc.sx, 0) && collision(posY, npc.y, plSizeY, npc.sy, 0)) {
+            if (collision(positionX, npc.x, plSizeX, npc.sx, 0) && collision(positionY, npc.y, plSizeY, npc.sy, 0)) {
                 level = 2;
             }
          }
 
-        if (talk <= 5 && E == true && EPush == false && collision(posX, npc.x, plSizeX, npc.sx, 0) && collision(posY, npc.y, plSizeY, npc.sy, 0)) {
+        if (talk <= 5 && E == true && EPush == false && collision(positionX, npc.x, plSizeX, npc.sx, 0) && collision(positionY, npc.y, plSizeY, npc.sy, 0)) {
             talk++ ;
             EPush = true;
         }
 
         if (E == true && npcStatus == 1 && MaterialInInventory == true) {
-            if (collision(posX, npc.x, plSizeX, npc.sx, 0) && collision(posY, npc.y, plSizeY, npc.sy, 0)) {
+            if (collision(positionX, npc.x, plSizeX, npc.sx, 0) && collision(positionY, npc.y, plSizeY, npc.sy, 0)) {
                 MaterialInInventory = false;
                 npcStatus = 2;
                 talk = 0;
@@ -233,7 +258,7 @@
 
         if (E == true && talk == 6) {
                 for (material of materialQuest) {
-                   if (collision(posX, material.x, plSizeX, material.sx, 0) && collision(posY, material.y, plSizeY, material.sy, 0)) {
+                   if (collision(positionX, material.x, plSizeX, material.sx, 0) && collision(positionY, material.y, plSizeY, material.sy, 0)) {
                         materialQuest.shift();
                         MaterialInInventory = true;
                  }
@@ -243,11 +268,9 @@
 
     function Controls() {
         if (Q == true) {
-            text("30px Lucida sans", "Black", "left", 20, 25, "Controls:");
-            text("25px Lucida sans", "Black", "left", 20, 50, "Movement - WASD");
-            text("25px Lucida sans", "Black", "left", 20, 78, "To Interaction press 'E'");
-            text("25px Lucida sans", "Black", "left", 20, 106, "To pick up something press 'E'");
-            text("25px Lucida sans", "Black", "left", 20, 132, "You can have only 1 thing in Inventory.");
+            for (control of controls) {
+                text(control.al, "black", "left", control.x, control.y, control.tl);
+         }
         }
     }
 
@@ -256,6 +279,20 @@
         ctx.fillStyle = cl;
         ctx.textAlign = align;
         ctx.fillText(text, x, y);
+    }
+
+    function collisionWithEnemy() {
+        for (enemy of enemyList) {
+            if (collision(positionX, enemy.x, plSzX, enemy.sx, 0) && collision(positionY, enemy.y, plSzY, enemy.sy, 0)) {
+                alert("test");
+            }
+        }
+
+       for (stillEnemy of stillEnemyList) {
+            if (collision(positionX, stillEnemy.x, plSzX, stillEnemy.sx, 0) && collision(positionY, stillEnemy.y, plSzY, stillEnemy.sy, 0)) {
+                alert("test");
+            }
+        }
     }
 
     function collision(obj1, obj2, sz1, sz2, dis) {
@@ -275,10 +312,10 @@
             if (Math.random() < 0.05) enemy.ang = Math.random() * Math.PI * 2;
 
             if (enemy.x <= 0) enemy.ang = Math.PI - enemy.ang;
-            if (enemy.x + enemy.szX >= canvas.width) enemy.ang = Math.PI - enemy.ang;
+            if (enemy.x + enemy.sx >= canvas.width) enemy.ang = Math.PI - enemy.ang;
 
             if (enemy.y <= 350) enemy.ang = -enemy.ang;
-            if (enemy.y + enemy.szY >= canvas.height) enemy.ang = -enemy.ang;
+            if (enemy.y + enemy.sy >= canvas.height) enemy.ang = -enemy.ang;
 
          }
       }

@@ -59,34 +59,42 @@
       let EPush = false;
 
       let MaterialInInventory = false;
-      let npcStatus = 0;
+      let Inventory = [];
+      let npcStatus = 0;   //0 -- získání questu, 1 -- dělání questu, 2 -- druhý dialog, 3 ---- další level
       let talk = 0;
 
       let Q = false;
       let QPush = false;
-      let levl = 1;
+      let levl = 0;
 
       let level = {
         tutorial: {
             background: "to do",
+             npc: [
+                {x:600, y:75, sx:75, sy:75, sk:"red", name:"Lucio", LengthOfTalk2:3, speech: [
+                            { q: "", d: ""},
+                            { q: "-- Hi, My name is Lucio, but you know that already.", d: "-- Oh, you really did it! Whisper:'I didn't really expect that.'"},
+                            { q: "-- Our car has unfortunatly crashed here.", d: "-- Now we can go! When you're ready, come here and press'E'."},
+                            { q: "-- So now, we need to get some wood for repair."},
+                            { q: "-- You go get it and I'll be here and watch the car."},
+                            { q: "-- When you'll find it, bring it here to me, Good Luck."},
+                ]}],
+        enemies: {enemyList:[], stillEnemyList:[]},
+        items: [],
+        },
 
-        npc: [
-                {x:600, y:75, sx:75, sy:75, skin:"red", name:"Lucio", talk1: [
-                            { a: ""},
-                            { b: "-- Hi, My name is Lucio, but you know that already."},
-                            { c: "-- Our car has unfortunatly crashed here."},
-                            { d: "-- So now, we need to get some wood for repair."},
-                            { e: "-- You go get it and I'll be here and watch the car."},
-                            { f: "-- When you'll find it, bring it here to me, Good Luck."},
-                          ], 
-                    talk2: [
-                            {a: ""},
-                            {b: "-- Oh, you really did it! Whisper:'I didn't really expect that.'"},
-                            {c: "-- Now we can go! When you're ready, come here and press'E'."},
-                    ]
-                }],
-        enemies: [
-                {enemyList: [
+        one: {
+            background: "do to",
+            npc: [
+                {x:600, y:75, sx:75, sy:75, sk:"blue", name:"Lucio", LengthOfTalk2:4, speech: [
+                        { q: "", d: ""},
+                        { q: "-- Damn it! We didn't get far and our car is already broken again!", d: "Aaa, you are finally back!"},
+                        { q: "-- This time we have no fuel.", d: "You got it! Nice!"},
+                        { q: "If I am right, there is a fuel station down there.", d: "We can go to the next location!"},
+                        { q: "Even though i would like to go there, you already have experience with this."},
+                        { q: "So, be aware of the monsters and uh... Good Luck"}
+                ]}],
+            enemies: {enemyList: [
                     newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
                     newEnemy(400, 600, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
                     newEnemy(400, 750, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5),
@@ -95,18 +103,17 @@
                 stillEnemyList: [
                     newStillEnemy(0, 550, 83, 50, 2, "black"),
                     newStillEnemy(500, 550, 83, 50, 2, "black"),
-                    ]}
-                ],
-        items: [
-         newMaterial (600, 750, 50, 50, "brown", "wood"),
-        ]
-
+                    ]},
+            items: [],
         }
       }
 
+      level.tutorial.items.push(newItem(600, 750, 50, 50, "brown", "Wood"));   //pushování itemů do items
+      level.one.items.push(newItem(600, 750, 50, 50, "green", "Fuel"));
+
       let active = level.tutorial;
 
-      let sentenc = "";
+      let sentence = "";
 
       let controls = [
         {x:20, y:25, al:"40px Lucida sans", tl:"Controls:"},
@@ -124,11 +131,11 @@
             return {x:x, y:y, sx:sx, sy:sy, sp:sp, sk:sk}
         }
 
-        function newMaterial(x, y, sx, sy, sk, name) {
+        function newItem(x, y, sx, sy, sk, name) {
             return {x:x, y:y, sx:sx, sy:sy, sk:sk, name:name}
         }
 
-      function onKey(event) {
+      function onKey(event) {           //klávesy
             if (event.keyCode == 65 || event.keyCode == 37) {
                 speedX = -8;
             }
@@ -152,7 +159,7 @@
 
         }
 
-        function onKeyUp() {
+        function onKeyUp() {        //klávesy 2
                 if (event.code == "KeyW" || event.code == "KeyS" || event.code == "ArrowUp" || event.code == "ArrowDown" ) {
                     speedY = 0;
                 }
@@ -181,14 +188,11 @@
         Controls();  //controls
         collisionWithEnemy();  //kolize
 
-        positionX += speedX;
+        positionX += speedX;            //hýbání hráče
         positionY += speedY;
 
-        ctx.fillStyle = "blue";
+        ctx.fillStyle = "blue";         //vykreslování hráče
         ctx.fillRect(positionX, positionY, plSzX, plSzY);
-
-        ctx.fillStyle = npc.sk;
-        ctx.fillRect(npc.x, npc.y, npc.sx, npc.sy);
 
         if (positionY <= 0){
 			    positionY += 8;
@@ -203,82 +207,90 @@
 			    positionX -= 8;
 			}
 
-        for (stillEnemy of active.enemies.stillEnemyList) {
+        for (stillEnemy of active.enemies.stillEnemyList) {         //vykreslování stillEnemy
             ctx.fillStyle = stillEnemy.sk;
             ctx.fillRect(stillEnemy.x, stillEnemy.y, stillEnemy.sx, stillEnemy.sy);
         }
-        for (enemy of active.enemies.enemyList) {
+        for (enemy of active.enemies.enemyList) {           //vykreslování random enemy
             ctx.fillStyle = enemy.sk;
             ctx.fillRect(enemy.x, enemy.y, enemy.sx, enemy.sy);
         }
-        for (npc of active.npc) {
+        for (npc of active.npc) {       //vykreslování npc
             ctx.fillStyle = npc.sk;
             ctx.fillRect(npc.x, npc.y, npc.sx, npc.sy);
         }
-        for (material of active.items) {
-            ctx.fillStyle = material.sk;
-            ctx.fillRect(material.x, material.y, material.sx, material.sy);
-        }
+        for (item of active.items) {    //vykreslování materiálu
+            ctx.fillStyle = item.sk;
+            ctx.fillRect(item.x, item.y, item.sx, item.sy);
+            }
+
+        if (levl == 0) active = level.tutorial;
+        if (levl == 1) active = level.one;
     }
 
     function CooperatingWithNPC() {
+        for (npc of active.npc) {     //mluvení 1
         if (npcStatus == 0) {
-            if (talk == 1) { sentenc = speech1.b  }
-            if (talk == 2) { sentenc = speech1.c }
-            if (talk == 3) { sentenc = speech1.d }
-            if (talk == 4) { sentenc = speech1.e }
-            if (talk == 5) { sentenc = speech1.f }
-            if (talk == 6) { sentenc = speech1.a; npcStatus = 1} 
+            if (talk < npc.speech.length) sentence = npc.speech[talk].q
+            if (talk == npc.speech.length) { sentence = npc.speech[0].q; npcStatus = 1} 
         }
+    
+        text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, sentence)
+        
 
-        text("28px Lucida sans", "Black", "center", npc.x, npc.y - 25, sentenc)
-
-        if (npcStatus == 2) {
-              if (talk == 1) { sentenc = speech2.b }
-              if (talk == 2) { sentenc = speech2.c }
-              if (talk == 3) { sentenc = speech2.a ; npcStatus = 3}
+        if (npcStatus == 2) {               //mluvení 2
+            if (talk < npc.LengthOfTalk2) sentence = npc.speech[talk].d;
+              if (talk == npc.LengthOfTalk2) { sentence = npc.speech[talk].d ; npcStatus = 3}
          }
 
+
          if (npcStatus == 3 && E == true) {
-            if (collision(positionX, npc.x, plSizeX, npc.sx, 0) && collision(positionY, npc.y, plSizeY, npc.sy, 0)) {
-                level = 2;
+            if (collision(positionX, npc.x, plSzX, npc.sx, 0) && collision(positionY, npc.y, plSzY, npc.sy, 0)) {   //konec levelu
+                levl = 1;
+                npcStatus = 0;
+                talk = 0;
             }
          }
 
-        if (talk <= 5 && E == true && EPush == false && collision(positionX, npc.x, plSizeX, npc.sx, 0) && collision(positionY, npc.y, plSizeY, npc.sy, 0)) {
+        if (talk <= npc.speech.length && E == true && EPush == false && collision(positionX, npc.x, plSzX, npc.sx, 0) && collision(positionY, npc.y, plSzY, npc.sy, 0)) {  //mluvení
             talk++ ;
             EPush = true;
         }
 
-        if (E == true && npcStatus == 1 && MaterialInInventory == true) {
-            if (collision(positionX, npc.x, plSizeX, npc.sx, 0) && collision(positionY, npc.y, plSizeY, npc.sy, 0)) {
+        if (E == true && npcStatus == 1 && MaterialInInventory == true) {  //odevzdání materiálu
+            if (collision(positionX, npc.x, plSzX, npc.sx, 0) && collision(positionY, npc.y, plSzY, npc.sy, 0)) {
                 MaterialInInventory = false;
                 npcStatus = 2;
-                talk = 0;
+                talk = 1;
+                Inventory.shift();
             }
         }
     }
+    }
 
-    function InventoryControl() {
-        if (MaterialInInventory == true) {
-            inventoryElement.innerHTML = "Wood";
+    function InventoryControl() {               //ovládání inventáře
+        for (i = 0; i < Inventory.length; i++) {
+        if (MaterialInInventory == true) {      
+            inventoryElement.innerHTML = Inventory[i].name;
+        }
+    }
+
+        if (MaterialInInventory == false) {         
+            inventoryElement.innerHTML = " You have empty bag."
         }
 
-        if (MaterialInInventory == false) {
-            inventoryElement.innerHTML = "  You have empty bag."
-        }
-
-        if (E == true && talk == 6) {
-                for (material of materialQuest) {
-                   if (collision(positionX, material.x, plSizeX, material.sx, 0) && collision(positionY, material.y, plSizeY, material.sy, 0)) {
-                        materialQuest.shift();
-                        MaterialInInventory = true;
+        if (E == true && talk == 6 && MaterialInInventory == false) {                       //sebrání materiálu
+                for (i = 0; i < active.items.length; i++) {
+                   if (collision(positionX, active.items[i].x, plSzX, active.items[i].sx, 0) && collision(positionY, active.items[i].y, plSzY, active.items[i].sy, 0)) {
+                    Inventory.push(active.items[i])
+                    active.items.splice(i, 1);
+                    MaterialInInventory = true;
                  }
              }
         }
     }
 
-    function Controls() {
+    function Controls() { //napsané controls
         if (Q == true) {
             for (control of controls) {
                 text(control.al, "black", "left", control.x, control.y, control.tl);
@@ -286,28 +298,28 @@
         }
     }
 
-    function text(font, cl, align, x, y, text) {
+    function text(font, cl, align, x, y, text) { //text v canvasu
         ctx.font = font;
         ctx.fillStyle = cl;
         ctx.textAlign = align;
         ctx.fillText(text, x, y);
     }
 
-    function collisionWithEnemy() {
+    function collisionWithEnemy() { //kolize s random enemy
         for (enemy of active.enemies.enemyList) {
             if (collision(positionX, enemy.x, plSzX, enemy.sx, 0) && collision(positionY, enemy.y, plSzY, enemy.sy, 0)) {
                 alert("test");
             }
         }
 
-       for (stillEnemy of active.enemies.stillEnemyList) {
+       for (stillEnemy of active.enemies.stillEnemyList) { //kolize se stillEnemy
             if (collision(positionX, stillEnemy.x, plSzX, stillEnemy.sx, 0) && collision(positionY, stillEnemy.y, plSzY, stillEnemy.sy, 0)) {
                 alert("test");
             }
         }
     }
 
-    function collision(obj1, obj2, sz1, sz2, dis) {
+    function collision(obj1, obj2, sz1, sz2, dis) {  //kolize
             let midd1 = obj1 + sz1 / 2;
 			let midd2 = obj2 + sz2 / 2;
 			let min = (sz1 + sz2 + dis) / 2;
@@ -315,7 +327,7 @@
 			return diff < min;
     }
 
-    function enemyMovement() {
+    function enemyMovement() {      //random hýbání enemy
         for (enemy of active.enemies.enemyList) {
             if (!enemy.fr) {
             enemy.x += Math.cos(enemy.ang) * enemy.sp;
@@ -333,7 +345,7 @@
       }
     }
 
-    function stillEnemyMovement() {
+    function stillEnemyMovement() { //hýbání stillEnemy
         for (stillEnemy of active.enemies.stillEnemyList) {
             stillEnemy.x += stillEnemy.sp;
             if (stillEnemy.x >= canvas.width) stillEnemy.x = 0;

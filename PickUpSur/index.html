@@ -48,12 +48,17 @@
 
       let inventoryElement = document.getElementById("Inventory");
 
-      let positionX = 400;
-      let positionY = 400;
-      let plSzX = 50;
-      let plSzY = 50;
+      let positionX = 60;
+      let positionY = 75;
+      let plSzX = 32;
+      let plSzY = 65;
       let speedX = 0;
       let speedY = 0;
+
+      let player = new Image();
+      player.src = "Images/player.png";
+      let npcSkin = new Image();
+      npcSkin.src = "Images/Lucio.png";
 
       let E = false;
       let EPush = false;
@@ -71,7 +76,7 @@
         tutorial: {
             background: "to do",
              npc: [
-                {x:600, y:75, sx:75, sy:75, sk:"red", name:"Lucio", LengthOfTalk2:3, speech: [
+                {x:600, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:3, speech: [
                             { q: "", d: ""},
                             { q: "-- Hi, My name is Lucio, but you know that already.", d: "-- Oh, you really did it! Whisper:'I didn't really expect that.'"},
                             { q: "-- Our car has unfortunatly crashed here.", d: "-- Now we can go! When you're ready, come here and press'E'."},
@@ -86,7 +91,7 @@
         one: {
             background: "do to",
             npc: [
-                {x:600, y:75, sx:75, sy:75, sk:"red", name:"Lucio", LengthOfTalk2:4, speech: [
+                {x:600, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:4, speech: [
                         { q: "", d: ""},
                         { q: "-- Damn it! We didn't get far and our car is already broken again!", d: "Aaa, you are finally back!"},
                         { q: "-- This time we have no fuel.", d: "You got it! Nice!"},
@@ -108,7 +113,7 @@
         two: {
             background: "to do",
             npc: [
-                {x:600, y:75, sx:75, sy:75, sk:"red", name:"Lucio", LengthOfTalk2:6, speech: [
+                {x:600, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:6, speech: [
                             { q: "", d: ""},
                             { q: "I don't know, how are you, but i am very hungry.", d: "Aaaa, There you are. Where have you been?"},
                             { q: "Luckily for me, ugh i mean us, there is an old building with supplies.", d: "I am waiting here for like i don't know, hours."},
@@ -211,7 +216,8 @@
         positionY += speedY;
 
         ctx.fillStyle = "blue";         //vykreslování hráče
-        ctx.fillRect(positionX, positionY, plSzX, plSzY);
+       // ctx.fillRect(positionX, positionY, plSzX, plSzY);
+       ctx.drawImage(player, positionX, positionY);
 
         if (positionY <= 0){
 			    positionY += 8;
@@ -235,8 +241,9 @@
             ctx.fillRect(enemy.x, enemy.y, enemy.sx, enemy.sy);
         }
         for (npc of active.npc) {       //vykreslování npc
-            ctx.fillStyle = npc.sk;
-            ctx.fillRect(npc.x, npc.y, npc.sx, npc.sy);
+          /*  ctx.fillStyle = npc.sk;
+            ctx.fillRect(npc.x, npc.y, npc.sx, npc.sy);*/
+            ctx.drawImage(npc.sk, npc.x, npc.y);
         }
         for (item of active.items) {    //vykreslování materiálu
             ctx.fillStyle = item.sk;
@@ -299,7 +306,7 @@
             inventoryElement.innerHTML = " You have empty bag."
         }
 
-        if (E == true && talk == 6 && MaterialInInventory == false) {                       //sebrání materiálu
+        if (E == true && npcStatus == 1 && MaterialInInventory == false) {                       //sebrání materiálu
                 for (i = 0; i < active.items.length; i++) {
                    if (collision(positionX, active.items[i].x, plSzX, active.items[i].sx, 0) && collision(positionY, active.items[i].y, plSzY, active.items[i].sy, 0)) {
                     Inventory.push(active.items[i])

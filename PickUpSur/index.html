@@ -86,6 +86,19 @@
              }], 
          enemies: [], 
          items: [], 
+         walls: [
+             {x:400, y:300, sx:40, sy: 70, sk: "black", hitbox:[
+             {xh: this.x - 1, yh: this.y, sxh: 1, syh: this.sy},
+             {xh: this.sx, yh: this.sy - 1, sxh: this.sx, syh: 1},
+             {xh: this.x + this.sx + 1, yh: this.y, sxh: 1, syh: this.sy},
+             {xh: this.x, yh: this.y + this.sy + 1}
+             ], 
+             draw: function() { 
+             ctx.fillStyle = this.sk;
+             ctx.fillRect(this.x, this.y, this.sx, this.sy);
+             }
+             }
+             ],
          }, 
   
          one: { 
@@ -111,7 +124,8 @@
                      newEnemy(500, 300, 83, 50, false, 0, "black", 2, 1), 
                      newEnemy(890, 300, 83, 50, false, 0, "black", 2, 1), 
                  ], 
-             items: [], 
+             items: [],
+             walls: [],
          }, 
          two: { 
              background: "to do", 
@@ -133,7 +147,8 @@
                      newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
                      newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
                  ], 
-             items: [],     
+             items: [],
+             walls: [],
          } 
        } 
   
@@ -248,6 +263,10 @@
          for (item of active.items) {    //vykreslování materiálu  
              item.draw();
              } 
+             
+             for (wall of active.walls) {
+                 wall.draw();
+             }
   
          if (levl == 0) active = level.tutorial; 
          if (levl == 1) active = level.one; 

@@ -87,17 +87,7 @@
          enemies: [], 
          items: [], 
          walls: [
-             {x:400, y:300, sx:40, sy: 70, sk: "black", hitbox:[
-                     newHitbox(400, 300, 1, 70, 1),         //leva
-                     newHitbox(400, 300, 40, 1, 2),         //horni
-                     newHitbox(400 + 40, 300, 1, 70, 3),    //prava
-                     newHitbox(400, 300 + 70, 40, 1, 4)     //dolni
-                   ], 
-                 draw: function() { 
-                     ctx.fillStyle = this.sk;
-                     ctx.fillRect(this.x, this.y, this.sx, this.sy);
-                    }
-                 }
+                newWall(400, 300, 40, 70, "black"),
              ],
          }, 
   
@@ -183,25 +173,40 @@
              } 
          } 
 
-         function newHitbox(x, y, sx, sy, direction) {  //direction 1 = levo, 2 = hore, 3 = pravo, 4 = dole
-                return {x:x, y:y, sx:sx, sy:sy, collis: function() {
-                    if (collision(player.x, this.x, player.sx, this.sx, 0) && collision(player.y, this.y, player.sy, this.sy, 0)) {
-                        //console.log("kolize", direction);
-                        if (direction == 1) {
-                            player.x -= player.spX;
-                        }
-                        if (direction == 2) {
-                            player.y -= player.spY;
-                        }
-                        if (direction == 3) {
-                            player.x -= player.spX;
-                        }
-                        if (direction == 4) {
-                            player.y -= player.spY;
-                        }
-                    }
-                }}
+         function newWall(x, y, sx, sy, sk) {
+            return {
+                x:x, y:y, sx:sx, sy:sx, sk:sk, hitbox: [
+                ], draw: function() {
+                     ctx.fillStyle = sk;
+                     ctx.fillRect(x, y, sx, sy);
+                }, push: function() {
+                    HitboxPush(x, y, sx, sy);
+                }
+            };
          }
+
+         function newHitbox(x, y, sx, sy, dir) {
+            if (dir == 1) {
+            return {x:x, y:y, sx:1, sy:sy, collis: function() {
+                        if (collision(player.x, this.x, player.sx, this.sx, 0) && collision(player.y, this.y, player.sy, this.sy, 0)) {
+                                player.x -= player.spX;
+                        }}}};
+            if (dir == 2) {
+             return {x:x, y:y, sx:sx, sy:1, collis: function() {
+                        if (collision(player.x, this.x, player.sx, this.sx, 0) && collision(player.y, this.y, player.sy, this.sy, 0)) {
+                                player.y -= player.spY;
+                        }}}};   
+            if (dir == 3) {
+               return {x:x + sx, y:y, sx:1, sy:sy, collis: function() {
+                        if (collision(player.x, this.x, player.sx, this.sx, 0) && collision(player.y, this.y, player.sy, this.sy, 0)) {
+                                player.x -= player.spX;
+                        }}}};
+            if (dir == 4) {
+               return {x:x, y:y + sy, sx:sx, sy:1, collis: function() {
+                        if (collision(player.x, this.x, player.sx, this.sx, 0) && collision(player.y, this.y, player.sy, this.sy, 0)) {
+                                player.y -= player.spY;
+                        }}}};        
+        }
   
        function onKey(event) {           //klávesy 
              if (event.keyCode == 65 || event.keyCode == 37) { 
@@ -283,13 +288,12 @@
              item.draw();
         } 
              
-        for (wall of active.walls) {    //vykreslovani zdi a kolize s hracem
-                 wall.draw();
-                 for (hitboxs of active.walls[0].hitbox) {
-                hitboxs.collis();
-                /*ctx.fillStyle = "red";
-                ctx.fillRect(hitboxs.x, hitboxs.y, hitboxs.sx, hitboxs.sy);*/
-             }
+        for (let i = 0; i < active.walls.length; i++) {    //vykreslovani zdi a kolize s hracem
+           active.walls[i].draw();
+           active.walls[i].push();
+            for (let j = 0; j < active.walls[i].hitbox.length; j++) {
+                active.walls[i].hitbox[j].collis();
+            }
         }
   
          if (levl == 0) active = level.tutorial; 
@@ -316,7 +320,7 @@
              if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) {   //konec levelu 
                  levl++; 
                  npcStatus = 0; 
-                 talk = 0; 
+                 talk = 0;
              } 
           } 
   
@@ -379,8 +383,15 @@
              if (collision(player.x, enemy.x, player.sx, enemy.sx, 0) && collision(player.y, enemy.y, player.sy, enemy.sy, 0)) { 
                  alert("Game Over"); 
              } 
-         } 
+         }  
      } 
+
+     function HitboxPush(x, y, sx, sy) {
+        for (wall of active.walls) {
+        for (let i = 1; i < 5; i++) {
+                wall.hitbox.push(newHitbox(x, y, sx, sy, i))
+        }}
+     }
   
      function collision(obj1, obj2, sz1, sz2, dis) {  //kolize 
              let midd1 = obj1 + sz1 / 2; 

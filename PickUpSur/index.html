@@ -83,7 +83,7 @@
                  draw: function() { 
                      ctx.drawImage(this.sk, this.x, this.y); 
                  } 
-             }], 
+             },], 
          enemies: [], 
          items: [], 
          walls: [
@@ -147,7 +147,8 @@
          } 
        } 
   
-       level.tutorial.items.push(newItem(1000, 500, 50, 50, "brown", "Wood", true));   //pushování itemů do items 
+       level.tutorial.items.push(newItem(1000, 500, 50, 50, "brown", "Wood", true));   //pushování itemů do items
+       level.tutorial.items.push(newItem(600, 300, 50, 50, "blue", "Water", false));
        level.one.items.push(newItem(1000, 500, 50, 50, "green", "Fuel", true)); 
        level.two.items.push(newItem(1000, 500, 50, 50, "orange", "Supplies", true)); 
   
@@ -178,7 +179,7 @@
                      }}}; 
   
          function newItem(x, y, sx, sy, sk, name, right) { 
-             return {x:x, y:y, sx:sx, sy:sy, sk:sk, name:name, right:right,
+             return {x:x, y:y, sx:sx, sy:sy, sk:sk, name:name, right:right, place:false, take:true,
              draw: function() {
                  ctx.fillStyle = this.sk;
                 ctx.fillRect(this.x, this.y, this.sx, this.sy) }
@@ -299,6 +300,7 @@
          Controls();  //controls 
          collisionWithEnemy();  //kolize 
          QuestListField(); //questy
+         placeItem(); //pokladani objektu
   
          player.x += player.spX;            //hýbání hráče 
          player.y += player.spY; 
@@ -334,7 +336,14 @@
             }
         }
 
-        active.npc[0].draw(); 
+        if (Inventory.length == 1) {
+            Inventory[0].x = player.x;
+            Inventory[0].y = player.y;
+        }
+
+        for (npc of active.npc) {
+            npc.draw();
+        }
   
          if (levl == 0) active = level.tutorial; 
          if (levl == 1) active = level.one; 
@@ -343,22 +352,25 @@
   
      function CooperatingWithNPC() { 
          for (npc of active.npc) {     //mluvení 1 
-         if (npcStatus == 0) { 
+         if (npcStatus == 0 && npc.talking == true) { 
              if (talk < npc.speech.length) sentence = npc.speech[talk].q 
              if (talk == npc.speech.length) { sentence = npc.speech[0].q; npcStatus = 1; 
                 activeQuest.shift();
-                activeQuest.push({al:"19px Lucida sans", y:88, tl:"Find and bring " + active.items[0].name})}  
+                activeQuest.push({al:"19px Lucida sans", y:88, tl:"Find and bring " + active.items[0].name});
+                for (item of active.items) {
+                    item.take = true;
+                }}  
          }
 
-         if (npcStatus == 0 && activeQuest.length == 0) {
+         if (npcStatus == 0 && activeQuest.length == 0) {  //davani questu
             activeQuest.push(talkToNpc);
          }
 
-         if (npcStatus == 2 && activeQuest.length == 0) {
+         if (npcStatus == 2 && activeQuest.length == 0) { //davani questu
             activeQuest.push(talkToNpc);
          }
 
-         text("18px Lucida Sans", "Black", "left", npc.x, npc.y - 25, sentence) 
+         if (npc.talking == true) text("18px Lucida Sans", "Black", "left", npc.x, npc.y - 25, sentence) 
   
          if (npcStatus == 2) {               //mluvení 2 
              if (talk < npc.LengthOfTalk2) sentence = npc.speech[talk].d; 
@@ -381,7 +393,7 @@
              } 
          } 
 
-         if (npcStatus == 2 || npcStatus == 0 && talk > 0) {
+         if (npcStatus == 2 || npcStatus == 0 && talk > 0 && collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) { 
             npc.talking = true;
          } else {
             npc.talking = false;
@@ -398,6 +410,18 @@
          } 
      }} 
 
+     function placeItem() {
+        for (npc of active.npc) {
+        if (E == true && Inventory.length == 1 && Inventory[0].place == true) {
+            if (!collision(player.x, npc.x, player.sx, npc.sx, 0) || !collision(player.y, npc.y, player.sy, npc.sy, 0)) {
+                Inventory[0].place = false;
+                active.items.push(Inventory[0]);
+                Inventory.shift();
+                setTimeout(() => active.items[active.items.length - 1].take = true, 500);
+            }
+        }}
+     }
+
      function talkingField() {
         for (npc of active.npc) {
             if (npc.talking) {
@@ -412,18 +436,20 @@
   
      function InventoryControl() {               //ovládání inventáře 
          if (Inventory.length == 1) {       
-             inventoryElement.innerHTML = Inventory[0].name; 
+             inventoryElement.innerHTML = Inventory[0].name;
          } 
   
          if (Inventory.length == 0) {          
-             inventoryElement.innerHTML = " You have empty bag." 
-         } 
-  
-         if (E == true && npcStatus == 1 && Inventory.length == 0) {                       //sebrání materiálu 
-                 for (i = 0; i < active.items.length; i++) { 
-                    if (collision(player.x, active.items[i].x, player.sx, active.items[i].sx, 0) && collision(player.y, active.items[i].y, player.sy, active.items[i].sy, 0)) { 
+             inventoryElement.innerHTML = " You have empty bag.";
+         }
+
+         for (i = 0; i < active.items.length; i++) {
+            if (E == true && npcStatus == 1 && Inventory.length == 0 && active.items[i].take == true) {                       //sebrání materiálu 
+                    if (collision(player.x, active.items[i].x, player.sx, active.items[i].sx, 0) && collision(player.y, active.items[i].y, player.sy, active.items[i].sy, 0)) {
+                     active.items[i].take = false;   
                      Inventory.push(active.items[i]) 
                      active.items.splice(i, 1);
+                     setTimeout(() => Inventory[0].place = true, 500);
                   } 
               }}} 
   

@@ -15,11 +15,7 @@
          display: block; 
          margin: 19px auto 0px auto; 
          margin-top: 0; 
-     } 
-  
-     canvas { 
-      background-color: grey; 
-     } 
+     }
   
      h1 { 
       text-align: center; 
@@ -41,8 +37,8 @@
      </div> 
  </body> 
  <script> 
-       var canvas = document.getElementById("myCanvas"); 
-       var ctx = canvas.getContext("2d"); 
+       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat questlist, pridat vice stromu, dodelat grafiku
+       var ctx = canvas.getContext("2d");                    /////////////////////////////////////////udelat vice levelu, udelat zivoty
   
   
        window.addEventListener('keydown', this.onKey, false); 
@@ -50,29 +46,33 @@
   
        let inventoryElement = document.getElementById("Inventory"); 
   
-       let playerSK = new Image(); 
-       playerSK.src = "Images/player.png"; 
-       let npcSkin = new Image(); 
-       npcSkin.src = "Images/Lucio.png"; 
-  
+       let playerSK = newImage("player");
+       let npcSkin = newImage("Lucio");
+       let Background1 = newImage("bg1");
+       let tree = newImage("strom");
+       
        let E = false; 
        let EPush = false; 
   
        let Inventory = []; 
        let npcStatus = 0;   //0 -- získání questu, 1 -- dělání questu, 2 -- druhý dialog, 3 ---- další level 
        let talk = 0; 
+
+       let quests = [];
   
        let Q = false; 
        let QPush = false; 
+       let R = false;
+       let RPush = false;
        let levl = 0; 
   
-       let player = {x:60, y:75, sx:32, sy:65, spX:0, spY:0, sk:playerSK, MaterialInInventory:false}; 
+       let player = {x:712, y:75, sx:32, sy:65, spX:0, spY:0, sk:playerSK}; 
   
        let level = { 
          tutorial: { 
-             background: "to do", 
+             background: Background1, 
               npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:3, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:3, talking: false, speech: [ 
                              { q: "", d: ""}, 
                              { q: "-- Hi, My name is Lucio, but you know that already.", d: "-- Oh, you really did it! Whisper:'I didn't really expect that.'"}, 
                              { q: "-- Our car has unfortunatly crashed here.", d: "-- Now we can go! When you're ready, come here and press'E'."}, 
@@ -87,20 +87,20 @@
          enemies: [], 
          items: [], 
          walls: [
-                newWall(400, 300, 40, 70, "black"),
+                newWall(410, 340, 50, 120, tree),
              ],
          }, 
   
          one: { 
-             background: "do to", 
+             background: Background1, 
              npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:4, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:4, talking: false, speech: [ 
                          { q: "", d: ""}, 
-                         { q: "-- Damn it! We didn't get far and our car is already broken again!", d: "Aaa, you are finally back!"}, 
-                         { q: "-- This time we have no fuel.", d: "You got it! Nice!"}, 
-                         { q: "If I am right, there is a fuel station down there.", d: "We can go to the next location!"}, 
-                         { q: "Even though i would like to go there, you already have experience with this."}, 
-                         { q: "So, be aware of the monsters and uh... Good Luck"} 
+                         { q: "-- Damn it! We didn't get far and our car is already broken again!", d: "-- Aaa, you are finally back!"}, 
+                         { q: "-- This time we have no fuel.", d: "-- You got it! Nice!"}, 
+                         { q: "-- If I am right, there is a fuel station down there.", d: "-- We can go to the next location!"}, 
+                         { q: "-- Even though i would like to go there, you already have experience."}, 
+                         { q: "-- So, be aware of the monsters and uh... Good Luck"} 
                  ],  
                  draw: function() { 
                      ctx.drawImage(this.sk, this.x, this.y); 
@@ -115,18 +115,21 @@
                      newEnemy(890, 300, 83, 50, false, 0, "black", 2, 1), 
                  ], 
              items: [],
-             walls: [],
+             walls: [
+                    newWall(410, 340, 50, 120, tree),
+             ],
          }, 
          two: { 
-             background: "to do", 
+             background: Background1, 
              npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:6, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:npcSkin, name:"Lucio", LengthOfTalk2:6, talking: false, speech: [ 
                              { q: "", d: ""}, 
-                             { q: "I don't know, how are you, but i am very hungry.", d: "Aaaa, There you are. Where have you been?"}, 
-                             { q: "Luckily for me, ugh i mean us, there is an old building with supplies.", d: "I am waiting here for like i don't know, hours."}, 
-                             { q: "Go there and bring here something", d: "But, did you found something?"}, 
-                             { q: "But be cautious, i don't want anything to happen to you.", d: "Nice, give it to me, i almost died of hunger."}, 
-                             { q: "But be quick, i am starting starving.", d: "Thank you very much, now, we can contionue our journey."}, 
+                             { q: "-- I don't know, how are you, but i am very hungry.", d: "-- Aaaa, There you are. Where have you been?"}, 
+                             { q: "-- Luckily for me, ugh, I mean, us, of course,", d: "-- I am waiting here for like i don't know, hours."}, 
+                             { q: "-- There is an old building with supplies.", d: "-- But, did you found something?"}, 
+                             { q: "-- Go there and bring here something", d: "-- Nice, give it to me, i almost died of hunger."}, 
+                             { q: "-- But be cautious, i don't want anything to happen to you.", d: "-- Thank you very much, now, we can contionue our journey."}, 
+                             { q: "-- But be quick, i am starting starving."}
                  ], 
                  draw: function() { 
                      ctx.drawImage(this.sk, this.x, this.y); 
@@ -138,25 +141,34 @@
                      newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
                  ], 
              items: [],
-             walls: [],
+             walls: [
+                    newWall(410, 340, 50, 120, tree),
+             ],
          } 
        } 
   
-       level.tutorial.items.push(newItem(1000, 500, 50, 50, "brown", "Wood"));   //pushování itemů do items 
-       level.one.items.push(newItem(1000, 500, 50, 50, "green", "Fuel")); 
-       level.two.items.push(newItem(1000, 500, 50, 50, "orange", "Supplies")); 
+       level.tutorial.items.push(newItem(1000, 500, 50, 50, "brown", "Wood", true));   //pushování itemů do items 
+       level.one.items.push(newItem(1000, 500, 50, 50, "green", "Fuel", true)); 
+       level.two.items.push(newItem(1000, 500, 50, 50, "orange", "Supplies", true)); 
   
        let active = level.one; 
   
        let sentence = ""; 
+
+       let activeQuest = [];
+       let talkToNpc = {al:"19px Lucida sans", y:88, tl:"Talk to Lucio."};
   
        let controls = [ 
          {x:1190, y:35, al:"30px Lucida sans", tl:"Controls"}, 
-         {x:1190, y:60, al:"15px Lucida sans", tl:"Movement - WASD"}, 
-         {x:1190, y:88, al:"15px Lucida sans", tl:"To Interaction press 'E'"}, 
-         {x:1190, y:116, al:"15px Lucida sans", tl:"To pick up something press 'E'"}, 
-         {x:1190, y:142, al:"15px Lucida sans", tl:"You can have only 1 thing in Inventory."}, 
+         {x:1190, y:60, al:"19px Lucida sans", tl:"Movement - WASD"}, 
+         {x:1190, y:88, al:"19px Lucida sans", tl:"To Interaction press 'E'"}, 
+         {x:1190, y:116, al:"19px Lucida sans", tl:"To pick up something press 'E'"}, 
+         {x:1190, y:142, al:"19px Lucida sans", tl:"You can have only 1 thing in Inventory."}, 
+         {x:1190, y:170, al:"19px Lucida sans", tl:"To see your quest hold 'R'."}
        ] 
+
+       let lengthOfControls = 400; //19(font)x19(idk) = 364 == 400
+       let heightOfControls = controls.length * 32;
   
          function newEnemy(x, y, sx, sy, fr, ang, sk, sp, type) {            //type 1 - stillEnemy, type 2 - random enemy 
              return {x:x, y:y, sx:sx, sy:sy, fr:fr, ang:ang, sk:sk, sp:sp, type:type,   
@@ -165,20 +177,23 @@
                           ctx.fillRect(this.x, this.y, this.sx, this.sy); 
                      }}}; 
   
-         function newItem(x, y, sx, sy, sk, name) { 
-             return {x:x, y:y, sx:sx, sy:sy, sk:sk, name:name,
+         function newItem(x, y, sx, sy, sk, name, right) { 
+             return {x:x, y:y, sx:sx, sy:sy, sk:sk, name:name, right:right,
              draw: function() {
                  ctx.fillStyle = this.sk;
                 ctx.fillRect(this.x, this.y, this.sx, this.sy) }
              } 
          } 
 
+         function newQuest( y, name, tl) {
+            return {x:1190, y:y, name:name, tl:tl}
+         }
+
          function newWall(x, y, sx, sy, sk) {
             return {
                 x:x, y:y, sx:sx, sy:sx, sk:sk, hitbox: [
                 ], draw: function() {
-                     ctx.fillStyle = sk;
-                     ctx.fillRect(x, y, sx, sy);
+                     ctx.drawImage(sk, x, y);
                 }, push: function() {
                     HitboxPush(x, y, sx, sy);
                 }
@@ -207,20 +222,34 @@
                                 player.y -= player.spY;
                         }}}};        
         }
+
+        function newImage(name) {
+            let img = new Image();
+            img.src = "Images/" + name + ".png";
+            return img;
+        }
   
        function onKey(event) {           //klávesy 
              if (event.keyCode == 65 || event.keyCode == 37) { 
-                 player.spX = -4; 
+                if (Inventory.length == 1) {
+                    player.spX = -2;
+                } else {player.spX = -4; }
              } 
              if (event.keyCode == 68 || event.keyCode == 39) { 
-                 player.spX = 4; 
+                if (Inventory.length == 1) {
+                    player.spX = 2;
+                } else {player.spX = 4; } 
              } 
-                         if (event.keyCode == 87 || event.keyCode == 38) { 
-                 player.spY = -4; 
-                         } 
-                         if (event.keyCode == 83 || event.keyCode == 40) { 
-                 player.spY = 4; 
-                         } 
+             if (event.keyCode == 87 || event.keyCode == 38) { 
+                if (Inventory.length == 1) {
+                    player.spY = -2;
+                } else {player.spY = -4; } 
+             } 
+             if (event.keyCode == 83 || event.keyCode == 40) { 
+                if (Inventory.length == 1) {
+                    player.spY = 2;
+                } else {player.spY = 4; } 
+             } 
   
              if (event.code == "KeyE") { 
                  E = true; 
@@ -229,7 +258,10 @@
              if (event.code == "KeyQ") { 
                  Q = true; 
              } 
-  
+
+             if (event.code == "KeyR") {
+                R = true;
+             }
          } 
   
          function onKeyUp() {        //klávesy 2 
@@ -249,16 +281,24 @@
                      Q = false; 
                      QPush = false; 
                  } 
+
+                 if (event.code == "KeyR") {
+                    R = false;
+                    RPush = false;
+                 }
              } 
   
      function draw() { 
          ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight); 
+         ctx.drawImage(active.background, 0, 0); 
   
+         talkingField(); //pole na mluveni
          enemyMovement();  //hybani random enemy 
          CooperatingWithNPC(); //npc veci 
          InventoryControl();  // inv veci 
          Controls();  //controls 
          collisionWithEnemy();  //kolize 
+         QuestListField(); //questy
   
          player.x += player.spX;            //hýbání hráče 
          player.y += player.spY; 
@@ -277,10 +317,8 @@
         if (player.x + player.sx >= canvas.width) { 
             player.x -= player.spX ; 
          } 
-  
-        active.npc[0].draw(); 
-  
-        for (enemy of active.enemies) {  //vykreslovani enemy
+
+         for (enemy of active.enemies) {  //vykreslovani enemy
                  enemy.draw(); 
         }  
   
@@ -295,6 +333,8 @@
                 active.walls[i].hitbox[j].collis();
             }
         }
+
+        active.npc[0].draw(); 
   
          if (levl == 0) active = level.tutorial; 
          if (levl == 1) active = level.one; 
@@ -305,15 +345,25 @@
          for (npc of active.npc) {     //mluvení 1 
          if (npcStatus == 0) { 
              if (talk < npc.speech.length) sentence = npc.speech[talk].q 
-             if (talk == npc.speech.length) { sentence = npc.speech[0].q; npcStatus = 1}  
-         } 
-  
-         text("18px Lucida sans", "Black", "left", npc.x, npc.y - 25, sentence) 
+             if (talk == npc.speech.length) { sentence = npc.speech[0].q; npcStatus = 1; 
+                activeQuest.shift();
+                activeQuest.push({al:"19px Lucida sans", y:88, tl:"Find and bring " + active.items[0].name})}  
+         }
+
+         if (npcStatus == 0 && activeQuest.length == 0) {
+            activeQuest.push(talkToNpc);
+         }
+
+         if (npcStatus == 2 && activeQuest.length == 0) {
+            activeQuest.push(talkToNpc);
+         }
+
+         text("18px Lucida Sans", "Black", "left", npc.x, npc.y - 25, sentence) 
   
          if (npcStatus == 2) {               //mluvení 2 
              if (talk < npc.LengthOfTalk2) sentence = npc.speech[talk].d; 
                if (talk == npc.LengthOfTalk2) { sentence = npc.speech[talk].d ; npcStatus = 3} 
-          } 
+          }     
   
   
           if (npcStatus == 3 && E == true) { 
@@ -330,46 +380,85 @@
              EPush = true; 
              } 
          } 
+
+         if (npcStatus == 2 || npcStatus == 0 && talk > 0) {
+            npc.talking = true;
+         } else {
+            npc.talking = false;
+         }
   
-         if (E == true && npcStatus == 1 && player.MaterialInInventory == true) {  //odevzdání materiálu 
-             if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) { 
-                 player.MaterialInInventory = false; 
+         if (E == true && npcStatus == 1 && Inventory.length == 1) {  //odevzdání materiálu 
+             if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) {  
+                if (Inventory[0].right == true) {
                  npcStatus = 2; 
                  talk = 1; 
                  Inventory.shift(); 
-             } 
+                 activeQuest.shift();
+             } }
          } 
      }} 
+
+     function talkingField() {
+        for (npc of active.npc) {
+            if (npc.talking) {
+                ctx.fillStyle = "white"
+                ctx.fillRect(npc.x - 15, npc.y - 50, 615, 50);
+
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "Black";
+                ctx.strokeRect(npc.x - 15, npc.y - 50, 615, 50);
+            }
+        }}
   
      function InventoryControl() {               //ovládání inventáře 
-         for (i = 0; i < Inventory.length; i++) { 
-         if (player.MaterialInInventory == true) {       
-             inventoryElement.innerHTML = Inventory[i].name; 
+         if (Inventory.length == 1) {       
+             inventoryElement.innerHTML = Inventory[0].name; 
          } 
-     } 
   
-         if (player.MaterialInInventory == false) {          
+         if (Inventory.length == 0) {          
              inventoryElement.innerHTML = " You have empty bag." 
          } 
   
-         if (E == true && npcStatus == 1 && player.MaterialInInventory == false) {                       //sebrání materiálu 
+         if (E == true && npcStatus == 1 && Inventory.length == 0) {                       //sebrání materiálu 
                  for (i = 0; i < active.items.length; i++) { 
                     if (collision(player.x, active.items[i].x, player.sx, active.items[i].sx, 0) && collision(player.y, active.items[i].y, player.sy, active.items[i].sy, 0)) { 
                      Inventory.push(active.items[i]) 
-                     active.items.splice(i, 1); 
-                     player.MaterialInInventory = true; 
+                     active.items.splice(i, 1);
                   } 
-              } 
-         } 
-     } 
+              }}} 
   
      function Controls() { //napsané controls 
-         if (Q == true) { 
+         if (Q == true && R == false) { 
+                ctx.fillStyle = "white"
+                ctx.fillRect(canvas.width - lengthOfControls, 0, lengthOfControls, heightOfControls);
+
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = "Black";
+                ctx.strokeRect(canvas.width - lengthOfControls, 0, lengthOfControls, heightOfControls);
              for (control of controls) { 
                  text(control.al, "black", "right", control.x, control.y, control.tl); 
           } 
          } 
      } 
+
+     function QuestListField() {
+        if (R == true && Q == false) {
+                ctx.fillStyle = "white"
+                ctx.fillRect(800, 0, 400, 192);
+
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = "Black";
+                ctx.strokeRect(800, 0, 400, 192);
+                text("30px Lucida sans", "black", "right", 1190, 35, "Your quests:"); 
+            if (activeQuest.length > 0) {
+                for (quest of activeQuest) {
+                    text(quest.al, "black", "right", 1190, quest.y, quest.tl);
+                }
+            } else {
+                text("25px Lucida sans", "black", "right", 1190, 60, "You don't have any quests!"); 
+            }
+        }
+     }
   
      function text(font, cl, align, x, y, text) { //text v canvasu 
          ctx.font = font; 
@@ -383,8 +472,7 @@
              if (collision(player.x, enemy.x, player.sx, enemy.sx, 0) && collision(player.y, enemy.y, player.sy, enemy.sy, 0)) { 
                  alert("Game Over"); 
              } 
-         }  
-     } 
+         }} 
 
      function HitboxPush(x, y, sx, sy) {
         for (wall of active.walls) {
@@ -401,7 +489,7 @@
                          return diff < min; 
      } 
   
-     function enemyMovement() {      //random hýbání enemy 
+     function enemyMovement() {      //hýbání enemy 
          for (enemy of active.enemies) { 
              if (!enemy.fr) { 
                 if (enemy.type == 2) {
@@ -413,16 +501,14 @@
              if (enemy.x <= 0) enemy.ang = Math.PI - enemy.ang; 
              if (enemy.x + enemy.sx >= canvas.width) enemy.ang = Math.PI - enemy.ang; 
   
-             if (enemy.y <= 150) enemy.ang = -enemy.ang; 
+             if (enemy.y <= 150) enemy.ang =  -enemy.ang; 
              if (enemy.y + enemy.sy >= canvas.height) enemy.ang = -enemy.ang; 
             }
              if (enemy.type == 1) { 
              enemy.x += enemy.sp; 
              if (enemy.x >= canvas.width) enemy.x = 0; 
             } 
-          } 
-       } 
-     } 
+        }}} 
      setInterval(draw, 15); 
  </script> 
  </html>

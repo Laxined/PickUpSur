@@ -28,7 +28,7 @@
          margin-top: 0%; 
      } 
  </style> 
- <body onload="alert('To see Controls hold Q.')"> 
+ <body> 
      <h2>Inventory Status: <span id="Inventory"></span></h2> 
      <div class="mid"> 
      <canvas id="myCanvas" width="1200" height="600" style="border:5px solid black"> 
@@ -37,10 +37,9 @@
      </div> 
  </body> 
  <script> 
-       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku, animace
+       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku
        var ctx = canvas.getContext("2d");                    /////////////////////////////////////////udelat vice levelu
-  
-  
+                                                             /////////////////////////////////////////chodit nahoru dolu anizby to ovlivnilo sikmo
        window.addEventListener('keydown', this.onKey, false); 
        window.addEventListener('keyup', this.onKeyUp, false); 
   
@@ -54,7 +53,14 @@
        let Background0 = newImage("bg0");
        let cactus = newImage("kaktus");
        let lifeSkin = newImage("srdce");
-       let YenaSkin = newImage("YenaCul");
+       let YenaSkin = newImage("YenaCul2");
+       let TankFuel = newImage("Fueltank");
+       let mainmenuPlayer = newImage("mainplayer");
+       let bg001 = newImage("bg-1");
+       let woodSK = newImage("woodSK");
+       let waterSK = newImage("waterSK");
+       let SuppliesSK = newImage("Supplies");
+       let bg002 = newImage("bg-2");
 
        let life = [
             {x:1000, y:560},
@@ -65,8 +71,7 @@
        let E = false; 
        let EPush = false; 
   
-       let Inventory = []; 
-       let npcStatus = 0;   //0 -- prvni dialog, 2 -- druhý dialog, 3 ---- další level 
+       let Inventory = [];
        let talk = 0; 
 
        let quests = [];
@@ -75,30 +80,36 @@
        let QPush = false; 
        let R = false;
        let RPush = false;
-       let levl = 1; 
+       let levl = 1; //npc.status --- 0 -- prvni dialog, 2 -- druhý dialog, 3 ---- další level 
+       let gameStatus = 1; //1 - main screen, 2 - hra, 3 - controls 
   
-       let player = {x:712, y:75, sx:32, sy:65, spX:0, spY:0, sk:playerSK, fr:false}; 
+       let player = {x:712, y:75, sx:40, sy:65, spX:0, spY:0, sk:playerSK, fr:false, ani:0, frame:0}; 
+       let frame = 0;
   
        let level = { 
          GameOver: {
             background: Background0,
              npc: [
-                {x:568, y:235, sx:34, sy:65, sk:YenaSkin, name: "Yena", LengthOfTalk2:0, talking: false, speech: [
-                                { q: ""},
-                                { q: "-- So, Welcome adventure. I am Yena Cul."},
-                                { q: "-- Everybody gets here eventually"},
+                {x:568, y:235, sx:54, sy:103, sk:YenaSkin, name: "Yena", LengthOfTalk2:3, talking: false, status: 0, main: true, speech: [
+                                { q: "", d: ""},
+                                { q: "-- So, Welcome adventure. I'm Yena Cul, The Goddess of Eternal Void.", d: "-- There is nothing you can do."},
+                                { q: "-- Everybody gets here eventually", d: "-- I hope you will enjoy this."},
                                 { q: "-- But why are you here so early?"},
                                 { q: "-- Oh, I see."},
                                 { q: "-- Are you the type of guy, who always tries to be heroic? Aren't you?"}, 
                                 { q: "-- Even if not, Welcome in eternity!"}
                 ],
                 draw: function() {
-                    ctx.drawImage(this.sk, this.x, this.y);
+                    ctx.drawImage(this.sk, 0, 0, 54, 103, this.x, this.y, this.sx, this.sy);
                 },
                  after1Dialog: function() {
+                    setTimeout(() => this.status = 2, 100);
                         activeQuest.shift();
                         activeQuest.push({tl:"Press 'F5'"});
-                 }},
+                 },
+                 after2Dialog: function() {
+                 },
+                },
                 ],
          enemies: [], 
          items: [],
@@ -107,7 +118,7 @@
          tutorial: { 
              background: Background1, 
               npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:3, talking: false, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:3, talking: false, status: 0, main: true, speech: [ 
                              { q: "", d: ""}, 
                              { q: "-- Hi, My name is Lucio, but you know that already.", d: "-- Oh, you really did it! Whisper:'I didn't really expect that.'"}, 
                              { q: "-- Our car has unfortunatly crashed here.", d: "-- Now we can go! When you're ready, come here and press'E'."}, 
@@ -123,14 +134,17 @@
                     activeQuest.push({tl:"Find and bring wood"});
                     for (item of active.items) {
                         item.take = true;
-                     }} 
+                     }},
+                 after2Dialog: function() {
+                    this.status = 3;
+                 }, 
              },], 
          enemies: [], 
          items: [], 
          walls: [
                 newWall(410, 340, 50, 120, tree),
                 newWall(20, 500, 50, 120, tree),
-                newWall(600, 420, 50, 120, tree),
+                newWall(600, 400, 50, 120, tree),
                 newWall(200, 290, 50, 120, tree),
                 newWall(1000, 20, 50, 120, tree),
                 newWall(400, 40, 50, 120, tree),
@@ -140,7 +154,7 @@
          one: { 
              background: Background2, 
              npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:4, talking: false, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:4, talking: false, status: 0, main: true, speech: [ 
                          { q: "", d: ""}, 
                          { q: "-- Damn it! We didn't get far and our car is already broken again!", d: "-- Aaa, you are finally back!"}, 
                          { q: "-- This time we have no fuel.", d: "-- You got it! Nice!"}, 
@@ -157,7 +171,10 @@
                     for (item of active.items) {
                         item.take = true;
                      }
-                 }
+                 },
+                 after2Dialog: function() {
+                    this.status = 3;
+                 },
              }], 
              enemies: [  
                      newEnemy(0, 300, 83, 50, false, 0, "black", 2, 1), 
@@ -176,12 +193,12 @@
              ],
          }, 
          two: { 
-             background: Background1, 
+             background: Background0, 
              npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, status: 0, main: true, speech: [ 
                              { q: "", d: ""}, 
                              { q: "-- I don't know, how are you, but i am very hungry.", d: "-- Aaaa, There you are. Where have you been?"}, 
-                             { q: "-- Luckily for me, ugh, I mean, us, of course,", d: "-- I am waiting here for like i don't know, hours."}, 
+                             { q: "-- Luckily for me, ugh, I mean, us, of course,", d: "-- I am waiting here for like, i don't know, hours."}, 
                              { q: "-- There is an old building with supplies.", d: "-- But, did you found something?"}, 
                              { q: "-- Go there and bring here something", d: "-- Nice, give it to me, i almost died of hunger."}, 
                              { q: "-- But be cautious, i don't want anything to happen to you.", d: "-- Thank you very much, now, we can contionue our journey."}, 
@@ -196,9 +213,12 @@
                     for (item of active.items) {
                         item.take = true;
                      }
-                 }
+                 },
+                 after2Dialog: function() {
+                    this.status = 3;
+                 },
              }], 
-                 enemies: [ 
+             enemies: [ 
                      newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
                      newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
                      newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
@@ -207,13 +227,102 @@
              walls: [
                     newWall(410, 340, 50, 120, tree),
              ],
-         } 
-       } 
+         },
+         three: {
+            background: Background0,
+            npc: [
+            {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, status: 0, main: true, speech: [ 
+                             { q: "", d: ""}, 
+                             { q: "-- I don't know, how are you, but i am very hungry.", d: "-- Aaaa, There you are. Where have you been?"}, 
+                             { q: "-- Luckily for me, ugh, I mean, us, of course,", d: "-- I am waiting here for like i don't know, hours."}, 
+                             { q: "-- There is an old building with supplies.", d: "-- But, did you found something?"}, 
+                             { q: "-- Go there and bring here something", d: "-- Nice, give it to me, i almost died of hunger."}, 
+                             { q: "-- But be cautious, i don't want anything to happen to you.", d: "-- Thank you very much, now, we can contionue our journey."}, 
+                             { q: "-- But be quick, i am starting starving."}
+                 ], 
+                 draw: function() { 
+                     ctx.drawImage(this.sk, this.x, this.y); 
+                 },
+                 after1Dialog: function() {
+                    this.status = 3;
+                 },
+                 after2Dialog: function() {
+                 },
+             }],
+             enemies: [], 
+             items: [],
+             walls: [],
+         },
+         four: {
+            background: bg002,
+            npc: [
+            {x:150, y:120, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:2, talking: false, status: 0, main: true, speech: [ 
+                             { q: "", d: ""}, 
+                             { q: "-- Aaaaaa, finaly we are back home.", d: "-- "}, 
+                             { q: "-- It is nice, isn't?", d: "-- "}, 
+                             { q: "-- Here we can shopping and, ugh, live?", d: "-- "}, 
+                             { q: "-- Yeah that too.", d: "-- "}, 
+                             { q: "-- Wait, I've got an excellent Idea. "}, 
+                             { q: "-- What about taking a Journey around the world?"},
+                             { q: "-- I see you like it. So go tell that to your dad."},
+                             { q: "-- I'm gonna prepare our car and when you come back, we will leave."},
+                 ], 
+                 draw: function() { 
+                     ctx.drawImage(this.sk, this.x, this.y); 
+                 },
+                 after1Dialog: function() {
+                    active.npc[2].status = 2;
+                 },
+                 after2Dialog: function() {
+                    this.status = 3;
+                 },
+             },
+             {x:585, y:460, sx:32, sy:65, sk:LucioSkin, name:"Old Ret", LengthOfTalk2:"x", talking: false, status: 0, main: false, speech: [ 
+                             { q: "", d: ""}, 
+                             { q: "-- ", d: "--"}, 
+                             { q: "-- ", d: "-- "}, 
+                             { q: "-- ", d: "-- "}, 
+                             { q: "-- ", d: "-- "},
+                 ], 
+                 draw: function() { 
+                     ctx.drawImage(this.sk, this.x, this.y); 
+                 },
+                 after1Dialog: function() {
+                 },
+                 after2Dialog: function() {
+                 },
+             },
+             {x:200, y:300, sx:32, sy:65, sk:LucioSkin, name:"Dad", LengthOfTalk2:"3", talking: false, status: 0, main: true, speech: [ 
+                             { q: "", d: ""}, 
+                             { q: "-- Oh, Hi son.", d: "-- What You're leaving!? A Journey around the world!?"}, 
+                             { q: "-- You are finally back.", d: "-- Well, I guess I can't stop you. Then I wish you Luck."}, 
+                 ], 
+                 draw: function() { 
+                     ctx.drawImage(this.sk, this.x, this.y); 
+                 },
+                 after1Dialog: function() {
+                 },
+                 after2Dialog: function() {
+                    active.npc[0].status = 2;
+                 },
+             }],
+             enemies: [
+                     newEnemy(0, 50, 83, 50, false, 0, "black", 2, 1),
+                     newEnemy(1100, 50, 83, 50, false, 0, "black", 2, 1), 
+                     newEnemy(250, 50, 83, 50, false, 0, "black", 2, 1), 
+                     newEnemy(500, 50, 83, 50, false, 0, "black", 2, 1), 
+                     newEnemy(890, 50, 83, 50, false, 0, "black", 2, 1),
+             ], 
+             items: [],
+             walls: [],
+         },
+        }
   
-       level.tutorial.items.push(newItem(1000, 500, 50, 50, "brown", "Wood", true));   //pushování itemů do items
-       level.tutorial.items.push(newItem(600, 300, 50, 50, "blue", "Water", false));
-       level.one.items.push(newItem(1000, 500, 50, 50, "green", "Fuel", true)); 
-       level.two.items.push(newItem(1000, 500, 50, 50, "orange", "Supplies", true)); 
+       level.tutorial.items.push(newItem(1000, 500, 30, 30, woodSK, "Wood", true));   //pushování itemů do items
+       level.tutorial.items.push(newItem(600, 300, 30, 30, waterSK, "Water", false));
+       level.one.items.push(newItem(1000, 500, 30, 30, TankFuel, "Fuel", true)); 
+       level.two.items.push(newItem(1000, 500, 30, 30, SuppliesSK, "Supplies", true)); 
+       level.three.items.push(newItem(1000, 500, 30, 30, SuppliesSK, "Supplies", true)); 
   
        let active = level.one; 
   
@@ -244,10 +353,10 @@
                      }}}; 
   
          function newItem(x, y, sx, sy, sk, name, right) { 
-             return {x:x, y:y, sx:sx, sy:sy, sk:sk, name:name, right:right, place:false, take:false,
+             return {x:x, y:y, sx:sx, sy:sy, sk:sk, name:name, right:right, place:false, take:false, inNPC:false,
              draw: function() {
-                 ctx.fillStyle = this.sk;
-                ctx.fillRect(this.x, this.y, this.sx, this.sy) }
+                ctx.drawImage(this.sk, this.x, this.y, this.sx, this.sy); 
+                }
              } 
          }
 
@@ -263,7 +372,7 @@
          }
 
          function newLife() {
-            life.push({x:life.length * 50 + life[0].x, y:550})
+            life.push({x:life.length * 50 + life[0].x, y:560})
          }
 
          function newHitbox(x, y, sx, sy, dir) {
@@ -296,25 +405,32 @@
         }
   
        function onKey(event) {           //klávesy 
-             if (event.keyCode == 65 || event.keyCode == 37) { 
+             if (event.code == "KeyA") {  //levo
+                    player.ani = 120;
+                    player.frame = 40;
                 if (Inventory.length == 1) {
                     player.spX = -2;
-                } else {player.spX = -4; }
+                } else {player.spX = -4;}
              } 
-             if (event.keyCode == 68 || event.keyCode == 39) { 
+
+             if (event.code == "KeyD") {  //pravo
+                    player.ani = 40;
+                    player.frame = 40;
                 if (Inventory.length == 1) {
                     player.spX = 2;
-                } else {player.spX = 4; } 
+                } else {player.spX = 4;} 
              } 
-             if (event.keyCode == 87 || event.keyCode == 38) { 
+
+             if (event.code == "KeyW") { //nahoru
                 if (Inventory.length == 1) {
                     player.spY = -2;
-                } else {player.spY = -4; } 
+                } else {player.spY = -4;} 
              } 
-             if (event.keyCode == 83 || event.keyCode == 40) { 
+
+             if (event.code == "KeyS") { //dolu
                 if (Inventory.length == 1) {
                     player.spY = 2;
-                } else {player.spY = 4; } 
+                } else {player.spY = 4;} 
              } 
   
              if (event.code == "KeyE") { 
@@ -328,15 +444,31 @@
              if (event.code == "KeyR") {
                 R = true;
              }
+
+             if (event.code == "Space") {
+                gameStatus = 2;
+             }
+
+             if (event.code == "KeyQ" && gameStatus == 1) {
+                gameStatus = 3;
+             }
+
+             if (event.code == "KeyM" && gameStatus == 3) {
+                gameStatus = 1;
+             }
          } 
   
          function onKeyUp() {        //klávesy 2 
-                 if (event.code == "KeyW" || event.code == "KeyS" || event.code == "ArrowUp" || event.code == "ArrowDown" ) { 
+                 if (event.code == "KeyW" || event.code == "KeyS") { 
                      player.spY = 0; 
                  } 
-                 if ( event.code == "KeyA" || event.code == "KeyD"||  event.code == "ArrowLeft" || event.code == "ArrowRight") { 
-                     player.spX = 0; 
+                 if (event.code == "KeyA" || event.code == "KeyD") { 
+                     player.spX = 0;
                  } 
+                 if (event.code == "KeyA" || event.code == "KeyD") {
+                    player.ani = 0;
+                    player.frame = 0;
+                 }
   
                  if (event.code == "KeyE") { 
                      E = false; 
@@ -354,8 +486,25 @@
                  }
              } 
   
-     function draw() { 
-         ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight); 
+     function main() { 
+        ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight); 
+
+        if (gameStatus == 1) { //main screen
+            menus();
+            text("35px Lucida sans", "black", "center", 610, 290, "Main Menu");
+            text("30px Lucida sans", "black", "center", 610, 420, "Press 'SPACE' to start the game");
+            text("30px Lucida sans", "black", "center", 610, 500, "Press 'Q' to see Controls");
+            inventoryElement.innerHTML = "You have no bag";
+        } else if (gameStatus == 3) { //controls
+            menus();
+            text("35px Lucida sans", "black", "center", 610, 290, "Controls");
+            text("30px Lucida sans", "black", "center", 610, 380, "Movement - WASD");
+            text("30px Lucida sans", "black", "center", 610, 420, "Hold R to see Quest list");
+            text("30px Lucida sans", "black", "center", 610, 460, "To Interact Press 'E'");
+            text("30px Lucida sans", "black", "center", 610, 500, "You have only 1 place in Bag");
+            text("30px Lucida sans", "black", "center", 610, 540, "Press 'Space' to start the game");
+            inventoryElement.innerHTML = "You have no bag";
+        } else if (gameStatus == 2) { //hra
          ctx.drawImage(active.background, 0, 0); 
   
          enemyMovement();  //hybani random enemy  
@@ -363,15 +512,23 @@
          collisionWithEnemy();  //kolize 
          placeItem(); //pokladani objektu
          lifes();
-  
-         if (player.fr == false) {
+
+         for (npc of active.npc) {
+            npc.draw();
+        }
+
+        frame++;
+        let fr = Math.round(frame / 10); //vykreslování hráče
+        
+        if (player.fr == false) {
             player.x += player.spX;            //hýbání hráče 
             player.y += player.spY;
-         } 
-  
-        ctx.drawImage(player.sk, player.x, player.y); //vykreslování hráče 
-  
-        if (player.y <= 0){ 
+            ctx.drawImage(player.sk, player.ani + player.frame * (fr%2), 0, player.sx, player.sy, player.x, player.y, player.sx, player.sy);
+        } else {
+            ctx.drawImage(player.sk, 0, 0, player.sx, player.sy, player.x, player.y, player.sx, player.sy);
+        }
+
+        if (player.y <= 0) {
             player.y -= player.spY; 
          } 
         if (player.y + player.sy >= canvas.height) { 
@@ -405,10 +562,6 @@
             Inventory[0].y = player.y;
         }
 
-        for (npc of active.npc) {
-            npc.draw();
-        }
-
         talkingField(); //pole na mluveni
         QuestListField(); //questy
         Controls();  //controls 
@@ -418,6 +571,8 @@
          if (levl == 1) active = level.tutorial; 
          if (levl == 2) active = level.one; 
          if (levl == 3) active = level.two; 
+         if (levl == 4) active = level.three;
+         if (levl == 5) active = level.four;
 
          if (life.length == 0 && death == false) {
             death = true;
@@ -428,11 +583,37 @@
             player.y = 100;
             Inventory.shift();
          }
+        }
      } 
+
+     function mainName() { //nápis
+        ctx.fillStyle = "white";
+        ctx.fillRect(380, 50, 460, 150);
+        text("40px Lucida sans", "black", "center", 610, 100, "Lax's journey around");
+        text("50px Lucida sans", "black", "center", 610, 180, "THE WORLD");
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = "#660000";
+        ctx.strokeRect(380, 50, 460, 150);
+
+     }
+
+     function menus() { //main screen
+            ctx.drawImage(bg001, 0, 0); 
+            ctx.drawImage(mainmenuPlayer, 100, 40);
+            //ctx.drawImage(); pridat nekoho
+            mainName();
+            ctx.fillStyle = "white";
+            ctx.fillRect(460, 230, 300, 100);
+            ctx.fillRect(380, 350, 460, 200);
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = "#660000";
+            ctx.strokeRect(460, 230, 300, 100);
+            ctx.strokeRect(380, 350, 460, 200);
+     }
   
      function CooperatingWithNPC() { 
          for (npc of active.npc) {     //mluvení 1 
-         if (npcStatus == 0 && npc.talking == true) { 
+         if (npc.status == 0 && npc.talking == true) { 
              if (talk < npc.speech.length) sentence = npc.speech[talk].q; player.fr = true;
              if (talk == npc.speech.length) {sentence = npc.speech[0].q; talk = 0; player.fr = false;
                 npc.after1Dialog();    
@@ -443,22 +624,20 @@
             activeQuest.push(talkToNpc);
          }
 
-
-         if (npc.talking == true) text("18px Lucida Sans", "Black", "left", npc.x, npc.y - 10, sentence) 
+         if (npc.talking == true) text("18px Lucida Sans", "Black", "left", 300, 580, sentence) 
   
-         if (npcStatus == 2 && npc.talking == true) {               //mluvení 2 
+         if (npc.status == 2 && npc.talking == true) {               //mluvení 2 
              if (talk < npc.LengthOfTalk2) {sentence = npc.speech[talk].d; player.fr = true;}
-               if (talk == npc.LengthOfTalk2) {sentence = npc.speech[0].d; player.fr = false; talk = 0; npcStatus = 3;}
+               if (talk == npc.LengthOfTalk2) {sentence = npc.speech[0].d; player.fr = false; talk = 0; npc.after2Dialog();}
           }     
   
-  
-          if (npcStatus == 3 && E == true && EPush == false) { 
+          if (npc.status == 3 && E == true && EPush == false && npc.main == true) { 
              if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) {   //konec levelu 
                  levl++; 
-                 npcStatus = 0; 
+                 npc.status = 0; 
                  talk = 0;
                  player.x = 400;
-                 player.y = 75;
+                 player.y = 120;
                  for (i = 0; i < 3; i++) {
                  if (life.length < 3) {
                     newLife();
@@ -482,10 +661,10 @@
             npc.talking = false;
          }
   
-         if (E == true && Inventory.length == 1) {  //odevzdání materiálu 
+         if (E == true && Inventory.length == 1 && npc.main == true) {  //odevzdání materiálu 
              if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) {  
                 if (Inventory[0].right == true) {
-                 npcStatus = 2;
+                 npc.status = 2;
                  Inventory.shift(); 
                  activeQuest.shift();
              } }
@@ -494,11 +673,17 @@
 
      function placeItem() {
         for (npc of active.npc) {
-        if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0) && Inventory.length == 1) {
-            Inventory[0].place = false;
+        if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) {
+            if (Inventory.length == 1) {
+                Inventory[0].inNPC = true;
+            }
+        }  else if (!collision(player.x, npc.x, player.sx, npc.sx, 0) || !collision(player.y, npc.y, player.sy, npc.sy, 0)){
+            if (Inventory.length == 1) {
+                Inventory[0].inNPC = false;
+            }
         }
 
-        if (E == true && Inventory.length == 1 && Inventory[0].place == true) {
+        if (E == true && Inventory.length == 1 && Inventory[0].place == true && Inventory[0].inNPC == false) {
             if (!collision(player.x, npc.x, player.sx, npc.sx, 0) || !collision(player.y, npc.y, player.sy, npc.sy, 0)) {
                 Inventory[0].place = false;
                 active.items.push(Inventory[0]);
@@ -512,12 +697,12 @@
         for (npc of active.npc) {
             if (npc.talking) {
                 ctx.fillStyle = "white"
-                ctx.fillRect(npc.x - 15, npc.y - 50, 615, 50);
+                ctx.fillRect(238, 540, 700, 60);
 
                 ctx.lineWidth = 3;
                 ctx.strokeStyle = "Black";
-                ctx.strokeRect(npc.x - 15, npc.y - 50, 615, 50);
-                text("25px Belanosima", "black", "left", npc.x - 10, npc.y - 30, npc.name);
+                ctx.strokeRect(238, 540, 700, 60);
+                text("25px Belanosima", "black", "left", 260, 562, npc.name);
             }
         }}
   
@@ -538,9 +723,9 @@
 
          for (i = 0; i < active.items.length; i++) {
             if (E == true && Inventory.length == 0 && active.items[i].take == true) {                       //sebrání materiálu 
-                    if (collision(player.x, active.items[i].x, player.sx, active.items[i].sx, 0) && collision(player.y, active.items[i].y, player.sy, active.items[i].sy, 0)) {
-                     active.items[i].take = false;   
-                     Inventory.push(active.items[i]) 
+                    if (collision(player.x, active.items[i].x, player.sx, active.items[i].sx, 0) && collision(player.y, active.items[i].y, player.sy, active.items[i].sy, 0)) {   
+                     active.items[i].take = false;
+                     Inventory.push(active.items[i]); 
                      active.items.splice(i, 1);
                      setTimeout(() => Inventory[0].place = true, 500);
                   } 
@@ -632,6 +817,6 @@
              if (enemy.x >= canvas.width) enemy.x = 0; 
             } 
         }}} 
-     setInterval(draw, 15); 
+     setInterval(main, 15);
  </script> 
  </html>

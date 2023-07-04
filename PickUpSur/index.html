@@ -37,7 +37,7 @@
      </div> 
  </body> 
  <script> 
-       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku
+       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku, zvetsit itemy, udelat shop, pres push
        var ctx = canvas.getContext("2d");                    /////////////////////////////////////////udelat vice levelu
                                                              /////////////////////////////////////////chodit nahoru dolu anizby to ovlivnilo sikmo
        window.addEventListener('keydown', this.onKey, false); 
@@ -61,26 +61,28 @@
        let waterSK = newImage("waterSK");
        let SuppliesSK = newImage("Supplies");
        let bg002 = newImage("bg-2");
+       let Girlfriend = newImage("Smurfettebetter1");
 
        let life = [
             {x:1000, y:560},
             {x:1050, y:560},
             {x:1100, y:560},
        ];
+       let maxLifes = 3;
        
        let E = false; 
-       let EPush = false; 
+       let EPush = false;
   
        let Inventory = [];
-       let talk = 0; 
-
+       let talk = 0;  
        let quests = [];
+       let wallet = 0;
   
        let Q = false; 
        let QPush = false; 
        let R = false;
        let RPush = false;
-       let levl = 1; //npc.status --- 0 -- prvni dialog, 2 -- druhý dialog, 3 ---- další level 
+       let levl = 2; //npc.status --- 0 -- prvni dialog, 2 -- druhý dialog, 3 ---- další level 
        let gameStatus = 1; //1 - main screen, 2 - hra, 3 - controls 
   
        let player = {x:712, y:75, sx:40, sy:65, spX:0, spY:0, sk:playerSK, fr:false, ani:0, frame:0}; 
@@ -90,7 +92,7 @@
          GameOver: {
             background: Background0,
              npc: [
-                {x:568, y:235, sx:54, sy:103, sk:YenaSkin, name: "Yena", LengthOfTalk2:3, talking: false, status: 0, main: true, speech: [
+                {x:568, y:235, sx:54, sy:103, sk:YenaSkin, name: "Yena", LengthOfTalk2:3, talking: false, status: 0, main: true, term1: false, term2: false, speech: [
                                 { q: "", d: ""},
                                 { q: "-- So, Welcome adventure. I'm Yena Cul, The Goddess of Eternal Void.", d: "-- There is nothing you can do."},
                                 { q: "-- Everybody gets here eventually", d: "-- I hope you will enjoy this."},
@@ -109,16 +111,36 @@
                  },
                  after2Dialog: function() {
                  },
+                 loop: function() {},
                 },
                 ],
          enemies: [], 
          items: [],
          walls: [],
          },
+         shop: {
+            background: Background0,
+             npc: [
+                {x:568, y:235, sx:32, sy:65, sk:"", name: "", LengthOfTalk2:"", talking: false, status: 0, main: true, term1: false, term2: false, speech: [],
+                draw: function() {
+                    ctx.drawImage(this.sk, this.x, this.y);
+                },
+                 after1Dialog: function() {
+                 },
+                 after2Dialog: function() {
+                 },
+                 loop: function() {},
+                },
+                ],
+         enemies: [], 
+         items: [],
+         walls: [],
+         forSale: [],
+         },
          tutorial: { 
              background: Background1, 
               npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:3, talking: false, status: 0, main: true, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:3, talking: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
                              { q: "-- Hi, My name is Lucio, but you know that already.", d: "-- Oh, you really did it! Whisper:'I didn't really expect that.'"}, 
                              { q: "-- Our car has unfortunatly crashed here.", d: "-- Now we can go! When you're ready, come here and press'E'."}, 
@@ -130,14 +152,21 @@
                      ctx.drawImage(this.sk, this.x, this.y); 
                  }, 
                  after1Dialog: function() {
+                    this.term1 = true;
                     activeQuest.shift();
                     activeQuest.push({tl:"Find and bring wood"});
                     for (item of active.items) {
                         item.take = true;
                      }},
                  after2Dialog: function() {
+                    this.term1 = false;
                     this.status = 3;
-                 }, 
+                 },
+                  loop: function() {
+                    if (this.term1 && this.term2) {
+                        this.status = 2;
+                    }
+                  }, 
              },], 
          enemies: [], 
          items: [], 
@@ -154,7 +183,7 @@
          one: { 
              background: Background2, 
              npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:4, talking: false, status: 0, main: true, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:4, talking: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                          { q: "", d: ""}, 
                          { q: "-- Damn it! We didn't get far and our car is already broken again!", d: "-- Aaa, you are finally back!"}, 
                          { q: "-- This time we have no fuel.", d: "-- You got it! Nice!"}, 
@@ -171,10 +200,17 @@
                     for (item of active.items) {
                         item.take = true;
                      }
+                     this.term1 = true;
                  },
                  after2Dialog: function() {
+                    this.term1 = false;
                     this.status = 3;
                  },
+                  loop: function() {
+                    if (this.term1 && this.term2) {
+                        this.status = 2;
+                    }
+                  },
              }], 
              enemies: [  
                      newEnemy(0, 300, 83, 50, false, 0, "black", 2, 1), 
@@ -195,7 +231,7 @@
          two: { 
              background: Background0, 
              npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, status: 0, main: true, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
                              { q: "-- I don't know, how are you, but i am very hungry.", d: "-- Aaaa, There you are. Where have you been?"}, 
                              { q: "-- Luckily for me, ugh, I mean, us, of course,", d: "-- I am waiting here for like, i don't know, hours."}, 
@@ -213,10 +249,17 @@
                     for (item of active.items) {
                         item.take = true;
                      }
+                     this.term1 = true;
                  },
                  after2Dialog: function() {
+                    this.term1 = false;
                     this.status = 3;
                  },
+                  loop: function() {
+                    if (this.term1 && this.term2)  {
+                        this.status = 2;
+                    }
+                  },
              }], 
              enemies: [ 
                      newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
@@ -231,7 +274,7 @@
          three: {
             background: Background0,
             npc: [
-            {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, status: 0, main: true, speech: [ 
+            {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
                              { q: "-- I don't know, how are you, but i am very hungry.", d: "-- Aaaa, There you are. Where have you been?"}, 
                              { q: "-- Luckily for me, ugh, I mean, us, of course,", d: "-- I am waiting here for like i don't know, hours."}, 
@@ -248,6 +291,7 @@
                  },
                  after2Dialog: function() {
                  },
+                  loop: function() {},
              }],
              enemies: [], 
              items: [],
@@ -256,55 +300,77 @@
          four: {
             background: bg002,
             npc: [
-            {x:150, y:120, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:2, talking: false, status: 0, main: true, speech: [ 
+            {x:150, y:120, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:2, talking: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
-                             { q: "-- Aaaaaa, finaly we are back home.", d: "-- "}, 
-                             { q: "-- It is nice, isn't?", d: "-- "}, 
-                             { q: "-- Here we can shopping and, ugh, live?", d: "-- "}, 
-                             { q: "-- Yeah that too.", d: "-- "}, 
+                             { q: "-- Aaaaaa, finaly we are back home.", d: "-- Ok, Let's goooo."}, 
+                             { q: "-- It is nice, isn't?"}, 
+                             { q: "-- Here we can shopping and, ugh, live?"}, 
+                             { q: "-- Yeah that too."}, 
                              { q: "-- Wait, I've got an excellent Idea. "}, 
                              { q: "-- What about taking a Journey around the world?"},
                              { q: "-- I see you like it. So go tell that to your dad."},
                              { q: "-- I'm gonna prepare our car and when you come back, we will leave."},
                  ], 
-                 draw: function() { 
+                 draw: function() {
                      ctx.drawImage(this.sk, this.x, this.y); 
                  },
                  after1Dialog: function() {
-                    active.npc[2].status = 2;
+                    activeQuest.shift();
+                    activeQuest.push({tl:"Talk to your dad."});
+                    active.npc[2].term1 = true;
+                    active.npc[1].term1 = true;
                  },
                  after2Dialog: function() {
                     this.status = 3;
                  },
+                  loop: function() {},
              },
-             {x:585, y:460, sx:32, sy:65, sk:LucioSkin, name:"Old Ret", LengthOfTalk2:"x", talking: false, status: 0, main: false, speech: [ 
+             {x:900, y:460, sx:32, sy:65, sk:Girlfriend, name:"Girlfriend that looks like Smurfette", LengthOfTalk2: 5, talking: false, status: 0, main: false, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
-                             { q: "-- ", d: "--"}, 
-                             { q: "-- ", d: "-- "}, 
-                             { q: "-- ", d: "-- "}, 
-                             { q: "-- ", d: "-- "},
+                             { q: "-- Oh Hi <3.", d: "-- What?"}, 
+                             { q: "-- You are finally back.", d: "-- You are leaving? But why?"}, 
+                             { q: "-- I've beem waiting for this moment for a while.", d: "-- Was I a bad Girlfriend?"},
+                             { q: "-- Come here at midnight, I'll show you something.", d: "-- Oh, I will be waiting here for you."}
                  ], 
                  draw: function() { 
                      ctx.drawImage(this.sk, this.x, this.y); 
                  },
                  after1Dialog: function() {
+                    this.term2 = true;
                  },
                  after2Dialog: function() {
                  },
+                  loop: function() {
+                    if (this.term1 == true && this.term2 == true) {
+                        this.status = 2;
+                    }
+                  },
              },
-             {x:200, y:300, sx:32, sy:65, sk:LucioSkin, name:"Dad", LengthOfTalk2:"3", talking: false, status: 0, main: true, speech: [ 
+             {x:200, y:300, sx:32, sy:65, sk:LucioSkin, name:"Dad", LengthOfTalk2:"4", talking: false, status: 0, main: false, term1: false, term2: false, first: false, speech: [ 
                              { q: "", d: ""}, 
                              { q: "-- Oh, Hi son.", d: "-- What You're leaving!? A Journey around the world!?"}, 
                              { q: "-- You are finally back.", d: "-- Well, I guess I can't stop you. Then I wish you Luck."}, 
+                             { q: "-- What would you like for lunch?", d: "-- Here, you'll need this."},
                  ], 
                  draw: function() { 
                      ctx.drawImage(this.sk, this.x, this.y); 
                  },
                  after1Dialog: function() {
+                    this.term2 = true;
                  },
                  after2Dialog: function() {
                     active.npc[0].status = 2;
+                    activeQuest.shift();
+                    if (this.first == false) {
+                    wallet += 10;
+                    this.first = true;
+                    }
                  },
+                  loop: function() {
+                    if (this.term1 && this.term2) {
+                        this.status = 2;
+                    }
+                  },
              }],
              enemies: [
                      newEnemy(0, 50, 83, 50, false, 0, "black", 2, 1),
@@ -315,14 +381,33 @@
              ], 
              items: [],
              walls: [],
-         },
+             shopStuff: {door: {x:725, y:290, sx:50, sy:80}, npc: {name:"Lum Beekeeper", sk:LucioSkin}, LengthOfTalk2: 0, speech: [{ q: "", d: ""},
+                                  { q: "-- Oh, Hi Lax. I've heard that you are taking a trip around the World.", d: ""},
+                                  { q: "-- Then you will certainly need some of my PowerUps or Other Items."},
+                                  { q: "-- Just look around and let me knoow if you like something."},],
+                         items: [{x:400, y:250, sx:50, sy:50, name:"Increase Health", sk:woodSK, price: 10, draw: function() {
+                            ctx.drawImage(this.sk, this.x, this.y);
+                                 },
+                            effect: function() {
+                                  maxLifes++;
+                                  for (i = 0; i < 4; i++) {
+                                    if (life.length < maxLifes) {
+                                        newLife();
+                                    }
+                                  }
+                                 },
+                            describtion: [{d: "This Item will Increase your", x:60},
+                                          {d: "maximum number of health", x:80},
+                                          {d: "by 1 per 5 levels.", x:100}],     
+                             }]}
+         }
         }
   
-       level.tutorial.items.push(newItem(1000, 500, 30, 30, woodSK, "Wood", true));   //pushování itemů do items
-       level.tutorial.items.push(newItem(600, 300, 30, 30, waterSK, "Water", false));
-       level.one.items.push(newItem(1000, 500, 30, 30, TankFuel, "Fuel", true)); 
-       level.two.items.push(newItem(1000, 500, 30, 30, SuppliesSK, "Supplies", true)); 
-       level.three.items.push(newItem(1000, 500, 30, 30, SuppliesSK, "Supplies", true)); 
+       level.tutorial.items.push(newItem(1000, 500, 40, 40, woodSK, "Wood", true));   //pushování itemů do items
+       level.tutorial.items.push(newItem(600, 300, 40, 40, waterSK, "Water", false));
+       level.one.items.push(newItem(1000, 500, 40, 40, TankFuel, "Fuel", true)); 
+       level.two.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
+       level.three.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
   
        let active = level.one; 
   
@@ -362,12 +447,14 @@
 
          function newWall(x, y, sx, sy, sk) {
             return {
-                x:x, y:y, sx:sx, sy:sx, sk:sk, hitbox: [
+                x:x, y:y, sx:sx, sy:sy, sk:sk, hitbox: [
+                    newHitbox(x, y, sx, sy, 1),
+                    newHitbox(x, y, sx, sy, 2),
+                    newHitbox(x, y, sx, sy, 3),
+                    newHitbox(x, y, sx, sy, 4),
                 ], draw: function() {
                      ctx.drawImage(sk, x, y);
-                }, push: function() {
-                    HitboxPush(x, y, sx, sy);
-                }
+                },
             };
          }
 
@@ -511,19 +598,21 @@
          InventoryControl();  // inv veci 
          collisionWithEnemy();  //kolize 
          placeItem(); //pokladani objektu
-         lifes();
+         lifes(); //zivoty
+         shopping(); //obhod
 
          for (npc of active.npc) {
             npc.draw();
+            npc.loop();
         }
 
         frame++;
         let fr = Math.round(frame / 10); //vykreslování hráče
         
         if (player.fr == false) {
+            ctx.drawImage(player.sk, player.ani + player.frame * (fr%2), 0, player.sx, player.sy, player.x, player.y, player.sx, player.sy);
             player.x += player.spX;            //hýbání hráče 
             player.y += player.spY;
-            ctx.drawImage(player.sk, player.ani + player.frame * (fr%2), 0, player.sx, player.sy, player.x, player.y, player.sx, player.sy);
         } else {
             ctx.drawImage(player.sk, 0, 0, player.sx, player.sy, player.x, player.y, player.sx, player.sy);
         }
@@ -547,13 +636,12 @@
   
         for (item of active.items) {    //vykreslování materiálu  
              item.draw();
-        } 
-             
-        for (let i = 0; i < active.walls.length; i++) {    //vykreslovani zdi a kolize s hracem
-           active.walls[i].draw();
-           active.walls[i].push();
-            for (let j = 0; j < active.walls[i].hitbox.length; j++) {
-                active.walls[i].hitbox[j].collis();
+        }
+
+        for (wall of active.walls) { //vykreslovani zdi a kolize s hracem
+            wall.draw();
+            for (i = 0; i < wall.hitbox.length; i++) {
+                wall.hitbox[i].collis();
             }
         }
 
@@ -562,17 +650,19 @@
             Inventory[0].y = player.y;
         }
 
+        walletText();
         talkingField(); //pole na mluveni
         QuestListField(); //questy
         Controls();  //controls 
         CooperatingWithNPC(); //npc veci
 
          if (levl == 0) active = level.GameOver;
-         if (levl == 1) active = level.tutorial; 
-         if (levl == 2) active = level.one; 
-         if (levl == 3) active = level.two; 
-         if (levl == 4) active = level.three;
-         if (levl == 5) active = level.four;
+         if (levl == 1) active = level.shop; 
+         if (levl == 2) active = level.tutorial; 
+         if (levl == 3) active = level.one; 
+         if (levl == 4) active = level.two; 
+         if (levl == 5) active = level.three;
+         if (levl == 6) active = level.four;
 
          if (life.length == 0 && death == false) {
             death = true;
@@ -582,6 +672,10 @@
             player.x = 600;
             player.y = 100;
             Inventory.shift();
+         }
+
+         if (life.length > maxLifes) {
+            life.splice(life.length - 1, 1);
          }
         }
      } 
@@ -639,7 +733,7 @@
                  player.x = 400;
                  player.y = 120;
                  for (i = 0; i < 3; i++) {
-                 if (life.length < 3) {
+                 if (life.length < maxLifes) {
                     newLife();
                  }}
                  if (Inventory.length == 1) {
@@ -664,12 +758,60 @@
          if (E == true && Inventory.length == 1 && npc.main == true) {  //odevzdání materiálu 
              if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) {  
                 if (Inventory[0].right == true) {
-                 npc.status = 2;
+                 npc.term2 = true;
                  Inventory.shift(); 
                  activeQuest.shift();
              } }
          } 
      }} 
+     
+     function walletText() {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 550, 250, 50);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "black";
+        ctx.strokeRect(0, 550, 250, 50);
+        text("25px Lucida sans", "Black", "left", 10, 580, "Wallet Balance: " + wallet);
+     }
+
+     function shopping() { //obchod
+        if (active == level.four) {
+            if (E == true && EPush == false) {
+                if (collision(player.x, active.shopStuff.door.x, player.sx, active.shopStuff.door.sx, 0) && collision(player.y, active.shopStuff.door.y, player.sy, active.shopStuff.door.sy, 0)) {
+                    levl = 1;
+                    level.shop.npc[0].LengthOfTalk2 = active.shopStuff.LengthOfTalk2;
+                    level.shop.npc[0].name = active.shopStuff.npc.name;
+                    level.shop.npc[0].sk = active.shopStuff.npc.sk;
+                    for (item of active.shopStuff.items) {
+                        level.shop.forSale.push(item);
+                    }
+                    for (speech of active.shopStuff.speech) {
+                    level.shop.npc[0].speech.push(speech);
+                }
+            }
+            }
+        }
+        if (active == level.shop) {
+            for (sale of active.forSale) {
+                sale.draw(); 
+                if (collision(player.x, sale.x, player.sx, sale.sx, 0) && collision(player.y, sale.y, player.sy, sale.sy, 0)) {
+                    ShopItemDescription();
+                    for (describ of sale.describtion) {
+                        text("20px Lucida sans", "Black", "left", 10, describ.x, describ.d);
+                    }
+                }
+            } 
+        }
+     }
+
+     function ShopItemDescription() {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, 300, 200);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = "black";
+        ctx.strokeRect(0, 0, 300, 200);
+        text("30px Lucida sans", "Black", "left", 10, 30, "Item Descriction:");
+     }
 
      function placeItem() {
         for (npc of active.npc) {
@@ -696,7 +838,7 @@
      function talkingField() {
         for (npc of active.npc) {
             if (npc.talking) {
-                ctx.fillStyle = "white"
+                ctx.fillStyle =  "#cccccc";
                 ctx.fillRect(238, 540, 700, 60);
 
                 ctx.lineWidth = 3;
@@ -780,14 +922,7 @@
              if (!collision(player.x, enemy.x, player.sx, enemy.sx, 0) || !collision(player.y, enemy.y, player.sy, enemy.sy, 0)) {
                 enemy.hit = false;
              }
-         }} 
-
-     function HitboxPush(x, y, sx, sy) {
-        for (wall of active.walls) {
-        for (let i = 1; i < 5; i++) {
-                wall.hitbox.push(newHitbox(x, y, sx, sy, i))
-        }}
-     }
+         }}
   
      function collision(obj1, obj2, sz1, sz2, dis) {  //kolize 
              let midd1 = obj1 + sz1 / 2; 

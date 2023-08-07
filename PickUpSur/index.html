@@ -27,23 +27,66 @@
          font-size: 200%; 
          margin-top: 0%; 
      } 
+
+     .container {
+        align-items: center;
+        display: flex;
+        justify-content: center;
+     }
+
+     .mid {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+     }
+
+     h3 {
+        font-size: 100%;
+     }
  </style> 
  <body> 
+    <audio id="backgroundMusic" src="Music/DragonSong.mp3" autoplay loop></audio>
      <h2>Inventory Status: <span id="Inventory"></span></h2> 
      <div class="mid"> 
      <canvas id="myCanvas" width="1200" height="600" style="border:5px solid black"> 
          Your browser does not support the canvas element. 
      </canvas> 
      </div> 
+     <div class="container">
+     <h3>Game by Laxined © 2023</h3>
+     </div>
  </body> 
  <script> 
        var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku, level 5 boss fight
-       var ctx = canvas.getContext("2d");                    /////////////////////////////////////////udelat vice levelu, respawn
+       var ctx = canvas.getContext("2d");                    /////////////////////////////////////////udelat vice levelu, predelat main menu - tlacitka
                                                              /////////////////////////////////////////chodit nahoru dolu anizby to ovlivnilo sikmo
        window.addEventListener('keydown', this.onKey, false); 
        window.addEventListener('keyup', this.onKeyUp, false); 
+
+       canvas.addEventListener('mousedown', (e) => {
+        const knobX = 435 + (trackWidth * volume) / 100;
+        const mouseX = e.clientX - canvas.offsetLeft;
+        const mouseY = e.clientY - canvas.offsetTop;
+
+        if (Math.abs(mouseX - knobX) <= 10 && Math.abs(mouseY - 460) <= 10) {
+            isDragging = true;
+        }
+       });
+       canvas.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            const mouseX = e.clientX - canvas.offsetLeft;
+            volume = Math.max(0, Math.min(100, Math.round((mouseX - 435) / 350 * 100)));
+        }
+       });
+       canvas.addEventListener('mouseup', () => {
+        isDragging = false;
+       });
+       canvas.addEventListener('mouseleave', () => {
+        isDragging = false;
+       })
   
        let inventoryElement = document.getElementById("Inventory"); 
+       let backgroundMusic = document.getElementById("backgroundMusic");
   
        let playerSK = newImage("player");
        let LucioSkin = newImage("Lucio");
@@ -83,10 +126,18 @@
        let QPush = false; 
        let R = false;
        let RPush = false;
-       let levl = 2; //npc.status --- 0 -- prvni dialog, 2 -- druhý dialog, 3 ---- další level 
-       let gameStatus = 1; //1 - main screen, 2 - hra, 3 - controls, 4 - titulky 
+       let levl = 7; //npc.status --- 0 -- prvni dialog, 2 -- druhý dialog, 3 ---- další level 
+       let gameStatus = 1; //1 - main screen, 2 - hra, 3 - controls, 4 - titulky, 5 - nastaveni 
        let checkpoint = 2;
        let side = 1;
+       let alreadyPushLevel = false;
+       let respawnAvailable = false;
+
+       let played = false;
+       let isDragging = false;
+       let volume = 50;
+       let trackWidth = 785 - 435;
+       
   
        let player = {x:712, y:75, sx:40, sy:65, spX:0, spY:0, sk:playerSK, fr:false, ani:0, frame:0, defaultSp: 4, strenght: false}; 
        let frame = 0;
@@ -95,13 +146,13 @@
          GameOver: {
             background: Background0,
              npc: [
-                {x:568, y:235, sx:54, sy:103, sk:YenaSkin, name: "Yena", LengthOfTalk2:3, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [
+                {x:568, y:235, sx:54, sy:103, sk:YenaSkin, name: "Yena", LengthOfTalk2:6, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [
                                 { q: "", d: ""},
                                 { q: "-- So, Welcome adventure. I'm Yena Cul, The Goddess of Eternal Void.", d: "-- There is nothing you can do."},
-                                { q: "-- Everybody gets here eventually", d: "-- I hope you will enjoy this."},
-                                { q: "-- But why are you here so early?"},
-                                { q: "-- Oh, I see."},
-                                { q: "-- Are you the type of guy, who always tries to be heroic? Aren't you?"}, 
+                                { q: "-- Everybody gets here eventually", d: "-- I hope you will enjoy this.", d: "-- Wait, There is one way!"},
+                                { q: "-- But why are you here so early?", d: "-- I can return to life."},
+                                { q: "-- Oh, I see.", d: "-- But to you will lose all your money."},
+                                { q: "-- Are you the type of guy, who always tries to be heroic? Aren't you?", d: "-- If you want to respawn just go to the stairs and press 'E'."}, 
                                 { q: "-- Even if not, Welcome in eternity!"}
                 ],
                 draw: function() {
@@ -109,10 +160,10 @@
                 },
                  after1Dialog: function() {
                     setTimeout(() => this.status = 2, 100);
-                        activeQuest.shift();
-                        activeQuest.push({tl:"Press 'F5'"});
                  },
-                 after2Dialog: "",
+                 after2Dialog: function() {
+                    respawnAvailable = true;
+                 },
                  loop: function() {},
                 },
                 ],
@@ -221,12 +272,12 @@
                   },
              }], 
              enemies: [  
-                     newEnemy(0, 300, 83, 50, false, 0, "black", 2, 1), 
-                     newEnemy(1000, 300, 83, 50, false, 0, "black", 2, 1), 
-                     newEnemy(1100, 300, 83, 50, false, 0, "black", 2, 1), 
-                     newEnemy(250, 300, 83, 50, false, 0, "black", 2, 1), 
-                     newEnemy(500, 300, 83, 50, false, 0, "black", 2, 1), 
-                     newEnemy(890, 300, 83, 50, false, 0, "black", 2, 1), 
+                     newEnemy(0, 300, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0), 
+                     newEnemy(1000, 300, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0), 
+                     newEnemy(1100, 300, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0), 
+                     newEnemy(250, 300, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0), 
+                     newEnemy(500, 300, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0), 
+                     newEnemy(890, 300, 83, 50, false, 0, "black", 2, 1, 0, 0, 0 , 0), 
                  ], 
              items: [],
              walls: [
@@ -271,9 +322,9 @@
                   },
              }], 
              enemies: [ 
-                     newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
-                     newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
-                     newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2), 
+                     newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2, 150, canvas.height, 0, canvas.width), 
+                     newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2, 150, canvas.height, 0, canvas.width), 
+                     newEnemy(400, 500, 83, 50, false, Math.PI * 2 * Math.random(), "black", 5, 2, 150, canvas.height, 0, canvas.width), 
                  ], 
              items: [],
              walls: [
@@ -390,11 +441,11 @@
                   },
              }],
              enemies: [
-                     newEnemy(0, 50, 83, 50, false, 0, "black", 2, 1),
-                     newEnemy(1100, 50, 83, 50, false, 0, "black", 2, 1), 
-                     newEnemy(250, 50, 83, 50, false, 0, "black", 2, 1), 
-                     newEnemy(500, 50, 83, 50, false, 0, "black", 2, 1), 
-                     newEnemy(890, 50, 83, 50, false, 0, "black", 2, 1),
+                     newEnemy(0, 50, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0),
+                     newEnemy(1100, 50, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0), 
+                     newEnemy(250, 50, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0), 
+                     newEnemy(500, 50, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0), 
+                     newEnemy(890, 50, 83, 50, false, 0, "black", 2, 1, 0, 0, 0, 0),
              ], 
              items: [],
              walls: [],
@@ -456,12 +507,33 @@
              enemies: [], 
              items: [],
              walls: [
-                    newWall(550, 0, 80, 150, tree),
+                    newWall(550, 0, 80, 220, tree),
+                    newWall(0, 200, 400, 20, tree),
+                    newWall(780, 200, 420, 20, tree),
              ],
-             bosses: [{x:850, y:80, sx:100, sy:100, sk:firstBossSK, name:"boss1", targeting: false,
+             bosses: [{x:850, y:80, sx:100, sy:100, sk:firstBossSK, name:"boss1", targeting: false, arenaStart: false,
                        draw: function() {
-                        ctx.drawImage(this.sk, this.x, this.y);
-                       } }],
+                        //ctx.drawImage(this.sk, this.x, this.y);
+                        ctx.fillStyle = "Black";
+                        ctx.fillRect(this.x, this.y, this.sx, this.sy);
+                       }, arenaWalls: function () {
+                        if (player.y >= 225 && this.arenaStart == false) {
+                            aktive.walls.push(newWall(401, 200, 148, 20, tree));
+                            aktive.walls.push(newWall(631, 200, 148, 20, tree));
+                            this.arenaStart = true;
+                        }
+                       },
+                    arenaFight: function() {
+                        if (this.arenaStart) {
+                            aktive.enemies.push(newEnemy(0, 320, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
+                            aktive.enemies.push(newEnemy(700, 320, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
+                            aktive.enemies.push(newEnemy(100, 470, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
+                            aktive.enemies.push(newEnemy(700, 470, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
+                            aktive.enemies.push(newEnemy(700, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 3, 2, 221, canvas.height, 0, canvas.width));
+                            aktive.enemies.push(newEnemy(700, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 3, 2, 221, canvas.height, 0, canvas.width));
+                            this.arenaFight = function(){};
+                        }
+                    } }],
          }
     }
   
@@ -471,7 +543,8 @@
        level.two.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
        level.three.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
   
-       let active = level.one; 
+       let active = level.five; 
+       let aktive;
   
        let sentence = ""; 
 
@@ -486,14 +559,27 @@
          {x:1190, y:88, al:"19px Lucida sans", tl:"To Interaction press 'E'"}, 
          {x:1190, y:116, al:"19px Lucida sans", tl:"To pick up something press 'E'"}, 
          {x:1190, y:142, al:"19px Lucida sans", tl:"You can have only 1 thing in Inventory."}, 
-         {x:1190, y:170, al:"19px Lucida sans", tl:"To see your quest hold 'R'."}
+         {x:1190, y:170, al:"19px Lucida sans", tl:"To see your quest hold 'R'."},
+         {x:1190, y:198, al:"19px Lucisa sans", tl:"To pause press 'M'"},
        ] 
+
+       let credits = [
+        {y:390, tx: "Coding by Laxined", st: 2},
+        {y:430, tx: "Music by T_en_M", st: 2},
+        {y:470, tx: "Story by Laxined", st: 2},
+        {y:510, tx: "Grafic and Design made by Laxined", st: 2},
+        {y:550, tx: "Beta testing by VultarexCZ, Valerie V.", st: 2},
+        {y:390, tx: "Special Thanks: Arnost K.", st: 3},
+        {y:390, tx: "Full version will be available soon.", st: 4},
+        {y:430, tx: "Looking for a Stuff.", st: 4},
+        {y:470, tx: "Discord Contact: 'lordlaxined'", st: 4}
+       ]
 
        let lengthOfControls = 400; //19(font)x19(idk) = 364 == 400
        let heightOfControls = controls.length * 32;
   
-         function newEnemy(x, y, sx, sy, fr, ang, sk, sp, type) {            //type 1 - stillEnemy, type 2 - random enemy 
-             return {x:x, y:y, sx:sx, sy:sy, fr:fr, ang:ang, sk:sk, sp:sp, type:type, hit:false,
+         function newEnemy(x, y, sx, sy, fr, ang, sk, sp, type, mxTp, mxBtt, mxLf, mxRg) {            //type 1 - stillEnemy, type 2 - random enemy 
+             return {x:x, y:y, sx:sx, sy:sy, fr:fr, ang:ang, sk:sk, sp:sp, type:type, hit:false, TwoMaxHeight: mxTp, TwoMaxBottom: mxBtt, TwoMaxLeft: mxLf, TwoMaxRight: mxRg,
                      draw: function() { 
                          ctx.fillStyle = this.sk; 
                           ctx.fillRect(this.x, this.y, this.sx, this.sy); 
@@ -592,29 +678,40 @@
                 } else {player.spY = player.defaultSp;} 
              } 
   
-             if (event.code == "KeyE") { 
+             if (event.code == "KeyE") { //E
                  E = true; 
              } 
   
-             if (event.code == "KeyQ") { 
+             if (event.code == "KeyQ") { //Q
                  Q = true; 
+                 if (gameStatus == 1 || gameStatus == 5) {
+                    gameStatus = 3;
+              }
              } 
 
-             if (event.code == "KeyR") {
+             if (event.code == "KeyR") { //R
                 R = true;
              }
 
-             if (event.code == "Space") {
-                gameStatus = 2;
+             if (event.code == "Space") {   //mezernik
+                if (gameStatus == 1 || gameStatus == 5) {
+                    gameStatus = 2;
+                    if (played == false && alreadyPushLevel == false) {
+                    played = true;
+                    aktive = active;
+                    alreadyPushLevel = true;
+                }
+             }}
+
+             if (event.code == "KeyM") { //M
+                    gameStatus = 1;
              }
 
-             if (event.code == "KeyQ" && gameStatus == 1) {
-                gameStatus = 3;
+             if (event.code == "KeyO") { //O
+                if (gameStatus == 1) {
+                    gameStatus = 5;
              }
-
-             if (event.code == "KeyM" && gameStatus == 3) {
-                gameStatus = 1;
-             }
+            }
          } 
   
          function onKeyUp() {        //klávesy 2 
@@ -647,12 +744,19 @@
   
      function main() { 
         ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight); 
+        backgroundMusicPlay();
 
         if (gameStatus == 1) { //main screen
             menus();
+            if (played == true) {
+            text("30px Lucida sans", "black", "center", 610, 400, "Press 'SPACE' to Resume");
+            text("35px Lucida sans", "black", "center", 610, 290, "Paused");
+            } else {
+            text("30px Lucida sans", "black", "center", 610, 400, "Press 'SPACE' to start the Game");
             text("35px Lucida sans", "black", "center", 610, 290, "Main Menu");
-            text("30px Lucida sans", "black", "center", 610, 420, "Press 'SPACE' to start the game");
-            text("30px Lucida sans", "black", "center", 610, 500, "Press 'Q' to see Controls");
+            }
+            text("30px Lucida sans", "black", "center", 610, 450, "Press 'Q' to see Controls");
+            text("30px Lucida sans", "black", "center", 610, 500, "Press 'O' to Options");
             inventoryElement.innerHTML = "You have no bag";
         } else if (gameStatus == 3) { //controls
             menus();
@@ -661,10 +765,14 @@
             text("30px Lucida sans", "black", "center", 610, 420, "Hold R to see Quest list");
             text("30px Lucida sans", "black", "center", 610, 460, "To Interact Press 'E'");
             text("30px Lucida sans", "black", "center", 610, 500, "You have only 1 place in Bag");
-            text("30px Lucida sans", "black", "center", 610, 540, "Press 'Space' to start the game");
+            text("30px Lucida sans", "black", "center", 610, 540, "Press 'M' to see Main Menu");
             inventoryElement.innerHTML = "You have no bag";
         } else if (gameStatus == 2) { //hra
-         ctx.drawImage(active.background, 0, 0); 
+         if (alreadyPushLevel == false) {
+            aktive = active;
+            alreadyPushLevel = true;
+         }   
+         ctx.drawImage(aktive.background, 0, 0); 
   
          enemyMovement();  //hybani random enemy  
          InventoryControl();  // inv veci 
@@ -675,7 +783,7 @@
          bossFight();
          respawn();
 
-         for (npc of active.npc) {
+         for (npc of aktive.npc) {
             npc.draw();
             npc.loop();
         }
@@ -704,15 +812,15 @@
             player.x -= player.spX ; 
          } 
 
-         for (enemy of active.enemies) {  //vykreslovani enemy
+         for (enemy of aktive.enemies) {  //vykreslovani enemy
                  enemy.draw(); 
         }  
   
-        for (item of active.items) {    //vykreslování materiálu  
+        for (item of aktive.items) {    //vykreslování materiálu  
              item.draw();
         }
 
-        for (wall of active.walls) { //vykreslovani zdi a kolize s hracem
+        for (wall of aktive.walls) { //vykreslovani zdi a kolize s hracem
             wall.draw();
             for (i = 0; i < wall.hitbox.length; i++) {
                 wall.hitbox[i].collis();
@@ -723,7 +831,6 @@
             Inventory[0].x = player.x;
             Inventory[0].y = player.y;
         }
-
         walletText();
         talkingField(); //pole na mluveni
         QuestListField(); //questy
@@ -751,6 +858,7 @@
             player.x = 600;
             player.y = 100;
             Inventory.shift();
+            setTimeout(() => alreadyPushLevel = false, 15);
          }
 
          if (life.length > maxLifes) {
@@ -771,41 +879,45 @@
                   ctx.strokeStyle = "#660000";
                   ctx.strokeRect(380, 250, 460, 200);
                   setTimeout(() => side = 2, 2500);
-            }
-            else if (side == 2 || side == 3) {
+            } else {
                 ctx.fillStyle = "white";
                 ctx.fillRect(300, 220, 600, 350);
-                text("40px Lucida sans", "Black", "center", 610, 280, "Credits:");
                 ctx.strokeStyle = "#660000";
                 ctx.lineWidth = 5;
                 ctx.strokeRect(300, 220, 600, 350);
+                for (cred of credits) {
+                    if (cred.st == side) {
+                        text("32px Lucida sans", "Black", "center", 610, cred.y, cred.tx);
+                    }
+                }
+            }
+             if (side == 2 || side == 3) {
+                text("40px Lucida sans", "Black", "center", 610, 280, "Credits:");
                 text("40px Lucida sans", "Black", "center", 610, 330, "By Laxined");
                 if (side == 2) {
-                      text("32px Lucida sans", "Black", "center", 610, 390, "Grafic and Design made by Laxined");
-                      text("32px Lucida sans", "Black", "center", 610, 430, "Music by");
-                      text("32px Lucida sans", "Black", "center", 610, 470, "Story by Laxined");
-                      text("32px Lucida sans", "Black", "center", 610, 510, "Coding by Laxined");
-                      text("32px Lucida sans", "Black", "center", 610, 550, "Beta Testing by Vultarex, and Others");
-                      setTimeout(() => side = 3, 3000);
+                      setTimeout(() => side = 3, 4000);
                 }
                 else if (side == 3) {
-                    text("32px Lucida sans", "Black", "center", 610, 390, "Special Thanks: Arnost K.");
-                    setTimeout(() => side = 4, 3000);
+                    setTimeout(() => side = 4, 4000);
                 }
             }
             else if (side == 4) {
-                ctx.fillStyle = "white";
-                ctx.fillRect(300, 220, 600, 350);
                 text("40px Lucida sans", "Black", "center", 610, 280, "The Rest:");
-                ctx.lineWidth = 5;
-                ctx.strokeStyle = "#66000";
-                ctx.strokeRect(300, 220, 600, 350);
-                text("32px Lucida sans", "Black", "center", 610, 390, "Full version will be soon available.");
-                text("32px Lucida sans", "Black", "center", 610, 430, "Looking for a Grafic Designer,");
-                text("32px Lucida sans", "Black", "center", 610, 470, "Story writer, Music");
-                text("32px Lucida sans", "Black", "center", 610, 510, "Discord Contact: 'lordlaxined'");
-                setTimeout(() => location.href = location.href, 4000);
+                setTimeout(() => location.href = location.href, 5000);
             }
+        }
+        else if (gameStatus == 5) {
+            const knobX = 435 + (trackWidth * volume) / 100; // test -- 0 + (100 * 100) / 100 = 100
+            menus();
+            text("35px Lucida sans", "black", "center", 610, 290, "Options");
+            text("30px Lucida sans", "black", "center", 610, 400, "Volume:");
+            ctx.fillStyle = "Blue";
+            ctx.fillRect(435, 450, 350, 20);
+            ctx.fillStyle = "Red";
+            ctx.beginPath();
+            ctx.arc(knobX, 460, 10, 0, 2 * Math.PI);
+            ctx.fill();
+            text("30px Lucida sans", "black", "center", 610, 540, "Press 'M' to see Main Menu");
         }
      } 
 
@@ -817,7 +929,11 @@
         ctx.lineWidth = 5;
         ctx.strokeStyle = "#660000";
         ctx.strokeRect(380, 50, 460, 150);
+     }
 
+     function backgroundMusicPlay() {
+        backgroundMusic.volume = volume / 100;
+        backgroundMusic.play();
      }
 
      function menus() { //main screen
@@ -835,7 +951,7 @@
      }
   
      function CooperatingWithNPC() { 
-         for (npc of active.npc) {     //mluvení 1 
+         for (npc of aktive.npc) {     //mluvení 1 
          if (npc.status == 0) { 
             if (npc.targeting == true && talk > 0 || npc.talking == true && talk > 0) {
              if (talk < npc.speech.length) sentence = npc.speech[talk].q; player.fr = true;
@@ -869,7 +985,7 @@
 
         if (npc.status == 3 && E == true && EPush == false && npc.main == true) { 
              if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) {   //konec level
-                 npc.status = 0; 
+                 npc.status = 0;
                  talk = 0;
                  player.x = 200;
                  player.y = 100;
@@ -881,6 +997,7 @@
                     Inventory.shift();
                  }
                  levl++;
+                 alreadyPushLevel = false;
              } 
           } 
 
@@ -912,42 +1029,44 @@
      function shopping() { //obchod
         if (active == level.four) {
             if (E == true && EPush == false) {
-                if (collision(player.x, active.shopStuff.door[0].x, player.sx, active.shopStuff.door[0].sx, 0) && collision(player.y, active.shopStuff.door[0].y, player.sy, active.shopStuff.door[0].sy, 0)) {
+                if (collision(player.x, aktive.shopStuff.door[0].x, player.sx, aktive.shopStuff.door[0].sx, 0) && collision(player.y, aktive.shopStuff.door[0].y, player.sy, aktive.shopStuff.door[0].sy, 0)) {
+                    alreadyPushLevel = false;
                     EPush = true;
                     levl = 1;
                     player.x = 600;
                     player.y = 500;
-                    level.shop.backItems = active.shopStuff.backItems;
-                    level.shop.npc[0].LengthOfTalk2 = active.shopStuff.LengthOfTalk2;
-                    level.shop.npc[0].after2Dialog = active.shopStuff.npc.twofunction;
-                    level.shop.npc[0].name = active.shopStuff.npc.name;
-                    level.shop.npc[0].sk = active.shopStuff.npc.sk;
+                    level.shop.backItems = aktive.shopStuff.backItems;
+                    level.shop.npc[0].LengthOfTalk2 = aktive.shopStuff.LengthOfTalk2;
+                    level.shop.npc[0].after2Dialog = aktive.shopStuff.npc.twofunction;
+                    level.shop.npc[0].name = aktive.shopStuff.npc.name;
+                    level.shop.npc[0].sk = aktive.shopStuff.npc.sk;
                     level.shop.door.shift();
-                    level.shop.door.push(active.shopStuff.door[1]);
-                    for (item of active.shopStuff.items) {
+                    level.shop.door.push(aktive.shopStuff.door[1]);
+                    for (item of aktive.shopStuff.items) {
                         level.shop.forSale.push(item);
                     }
-                    for (speech of active.shopStuff.speech) {
+                    for (speech of aktive.shopStuff.speech) {
                     level.shop.npc[0].speech.push(speech);
                 }
             }
             }
         }
        if (active == level.shop) {
-            if (collision(player.x, active.door[0].x, player.sx, active.door[0].sx, 0) && collision(player.y, active.door[0].y, player.sy, active.door[0].sy, 0)) {
+            if (collision(player.x, aktive.door[0].x, player.sx, aktive.door[0].sx, 0) && collision(player.y, aktive.door[0].y, player.sy, aktive.door[0].sy, 0)) {
                 if (E == true && EPush == false) {
                     EPush = true;
-                    levl = active.door[0].loc;
-                    player.x = active.door[0].locX;
-                    player.y = active.door[0].locY;
+                    levl = aktive.door[0].loc;
+                    player.x = aktive.door[0].locX;
+                    player.y = aktive.door[0].locY;
                     level.shop.backItems();
                     level.shop.backItems = "";
                     level.shop.forSale = [];
+                    alreadyPushLevel = false;
                 }
             }
         }
         if (active == level.shop) {
-            for (sale of active.forSale) {
+            for (sale of aktive.forSale) {
                 if (sale.buy == 1) {
                 sale.draw(); 
                 if (collision(player.x, sale.x, player.sx, sale.sx, 0) && collision(player.y, sale.y, player.sy, sale.sy, 0)) {
@@ -956,8 +1075,8 @@
                         text("20px Lucida sans", "Black", "left", 10, describ.y, describ.d);
                     }
                     if (E == true) {
-                        active.npc[0].status = 2;
-                        active.npc[0].talking = true;
+                        aktive.npc[0].status = 2;
+                        aktive.npc[0].talking = true;
                         sale.buy = 2;
                     }
                 }
@@ -999,8 +1118,8 @@
 
      function respawn() {
         if (active == level.GameOver) {
-            if (collision(player.x, active.respawnPoint.x, player.sx, active.respawnPoint.sx, 0) && collision(player.y, active.respawnPoint.y, player.sy, active.respawnPoint.sy, 0)) {
-                if (E == true && EPush == false) {
+            if (collision(player.x, aktive.respawnPoint.x, player.sx, aktive.respawnPoint.sx, 0) && collision(player.y, aktive.respawnPoint.y, player.sy, aktive.respawnPoint.sy, 0)) {
+                if (E == true && EPush == false && respawnAvailable == true) {
                         newLife();
                         newLife();
                         newLife();
@@ -1009,13 +1128,15 @@
                     EPush = true;
                     player.x = 200;
                     player.y = 100;
+                    alreadyPushLevel = false;
+                    death = false;
                 }
             }
         }
      }
 
      function placeItem() {
-        for (npc of active.npc) {
+        for (npc of aktive.npc) {
         if (collision(player.x, npc.x, player.sx, npc.sx, 0) && collision(player.y, npc.y, player.sy, npc.sy, 0)) {
             if (Inventory.length == 1) {
                 Inventory[0].inNPC = true;
@@ -1029,15 +1150,15 @@
         if (E == true && Inventory.length == 1 && Inventory[0].place == true && Inventory[0].inNPC == false) {
             if (!collision(player.x, npc.x, player.sx, npc.sx, 0) || !collision(player.y, npc.y, player.sy, npc.sy, 0)) {
                 Inventory[0].place = false;
-                active.items.push(Inventory[0]);
+                aktive.items.push(Inventory[0]);
                 Inventory.shift();
-                setTimeout(() => active.items[active.items.length - 1].take = true, 500);
+                setTimeout(() => aktive.items[aktive.items.length - 1].take = true, 500);
             }
         }}
      }
 
      function talkingField() {
-        for (npc of active.npc) {
+        for (npc of aktive.npc) {
             if (npc.talking || npc.targeting && talk > 0) {
                 ctx.fillStyle =  "#cccccc";
                 ctx.fillRect(238, 540, 700, 60);
@@ -1064,12 +1185,12 @@
              inventoryElement.innerHTML = " You have empty bag.";
          }
 
-         for (i = 0; i < active.items.length; i++) {
-            if (E == true && Inventory.length == 0 && active.items[i].take == true) {                       //sebrání materiálu 
-                    if (collision(player.x, active.items[i].x, player.sx, active.items[i].sx, 0) && collision(player.y, active.items[i].y, player.sy, active.items[i].sy, 0)) {   
-                     active.items[i].take = false;
-                     Inventory.push(active.items[i]); 
-                     active.items.splice(i, 1);
+         for (i = 0; i < aktive.items.length; i++) {
+            if (E == true && Inventory.length == 0 && aktive.items[i].take == true) {                       //sebrání materiálu 
+                    if (collision(player.x, aktive.items[i].x, player.sx, aktive.items[i].sx, 0) && collision(player.y, aktive.items[i].y, player.sy, aktive.items[i].sy, 0)) {   
+                     aktive.items[i].take = false;
+                     Inventory.push(aktive.items[i]); 
+                     aktive.items.splice(i, 1);
                      setTimeout(() => Inventory[0].place = true, 500);
                   } 
               }}} 
@@ -1115,33 +1236,35 @@
      } 
 
      function bossFight() {
-        for (boss of active.bosses) {
+        for (boss of aktive.bosses) {
             boss.draw();
             if (collision(player.x, boss.x, player.sx, boss.sx, 0) && collision(player.y, boss.y, player.sy, boss.sy, 0)) {
                 boss.targeting = true;
             }
+            boss.arenaWalls();
+            boss.arenaFight();
         }
      }
 
      function itemForSaleTest() {
-        if (active.forSale[0].buy == 2) {
-            setTimeout(() => active.forSale[0].buy = 3, 200);
+        if (aktive.forSale[0].buy == 2) {
+            setTimeout(() => aktive.forSale[0].buy = 3, 200);
         }
-        if (active.forSale.length == 2) {
-            if (active.forSale[1].buy == 2) {
-                setTimeout(() => active.forSale[1].buy = 3, 200);
+        if (aktive.forSale.length == 2) {
+            if (aktive.forSale[1].buy == 2) {
+                setTimeout(() => aktive.forSale[1].buy = 3, 200);
             }}
-        if (active.forSale.length == 3) {
-            if (active.forSale[1].buy == 2) {
-                setTimeout(() => active.forSale[1].buy = 3, 200);
+        if (aktive.forSale.length == 3) {
+            if (aktive.forSale[1].buy == 2) {
+                setTimeout(() => aktive.forSale[1].buy = 3, 200);
             };
-            if (active.forSale[2].buy == 2) {
-                setTimeout(() => active.forSale[2].buy = 3, 200);
+            if (aktive.forSale[2].buy == 2) {
+                setTimeout(() => aktive.forSale[2].buy = 3, 200);
             }}
      }
   
      function collisionWithEnemy() { //kolize s enemy 
-         for (enemy of active.enemies) { 
+         for (enemy of aktive.enemies) { 
              if (collision(player.x, enemy.x, player.sx, enemy.sx, 0) && collision(player.y, enemy.y, player.sy, enemy.sy, 0) && enemy.hit == false) { 
                  enemy.hit = true;
                  life.pop();
@@ -1160,19 +1283,19 @@
      } 
   
      function enemyMovement() {      //hýbání enemy 
-         for (enemy of active.enemies) { 
+         for (enemy of aktive.enemies) { 
              if (!enemy.fr) { 
                 if (enemy.type == 2) {
-             enemy.x += Math.cos(enemy.ang) * enemy.sp; 
+             enemy.x += Math.cos(enemy.ang) * enemy.sp; //hýbání
              enemy.y += Math.sin(enemy.ang) * enemy.sp; 
   
-             if (Math.random() < 0.05) enemy.ang = Math.random() * Math.PI * 2; 
+             if (Math.random() < 0.05) enemy.ang = Math.random() * Math.PI * 2; //měnění směru
   
-             if (enemy.x <= 0) enemy.ang = Math.PI - enemy.ang; 
-             if (enemy.x + enemy.sx >= canvas.width) enemy.ang = Math.PI - enemy.ang; 
+             if (enemy.x <= enemy.TwoMaxLeft) enemy.ang = Math.PI - enemy.ang;     //odrážení
+             if (enemy.x + enemy.sx >= enemy.TwoMaxRight) enemy.ang = Math.PI - enemy.ang; 
   
-             if (enemy.y <= 150) enemy.ang =  -enemy.ang; 
-             if (enemy.y + enemy.sy >= canvas.height) enemy.ang = -enemy.ang; 
+             if (enemy.y <= enemy.TwoMaxHeight) enemy.ang =  -enemy.ang;  //odrážení
+             if (enemy.y + enemy.sy >= enemy.TwoMaxBottom) enemy.ang = -enemy.ang; 
             }
              if (enemy.type == 1) { 
              enemy.x += enemy.sp; 

@@ -45,7 +45,7 @@
      }
  </style> 
  <body> 
-    <audio id="backgroundMusic" src="Music/DragonSong.mp3" autoplay loop></audio>
+    <audio id="backgroundMusic" src="Music/OchreSong.mp3" autoplay loop></audio>
      <h2>Inventory Status: <span id="Inventory"></span></h2> 
      <div class="mid"> 
      <canvas id="myCanvas" width="1200" height="600" style="border:5px solid black"> 
@@ -57,25 +57,28 @@
      </div>
  </body> 
  <script> 
-       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku, level 5 boss fight
-       var ctx = canvas.getContext("2d");                    /////////////////////////////////////////udelat vice levelu, predelat main menu - tlacitka
+       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku, pridat meneni hudby
+       var ctx = canvas.getContext("2d");                    /////////////////////////////////////////udelat vice levelu, new Game button
                                                              /////////////////////////////////////////chodit nahoru dolu anizby to ovlivnilo sikmo
        window.addEventListener('keydown', this.onKey, false); 
        window.addEventListener('keyup', this.onKeyUp, false); 
 
-       canvas.addEventListener('mousedown', (e) => {
+       canvas.addEventListener('mousedown', (e) => { //mys pro zvuk
         const knobX = 435 + (trackWidth * volume) / 100;
         const mouseX = e.clientX - canvas.offsetLeft;
         const mouseY = e.clientY - canvas.offsetTop;
 
-        if (Math.abs(mouseX - knobX) <= 10 && Math.abs(mouseY - 460) <= 10) {
+        if (Math.abs(mouseX - knobX) <= 10 && Math.abs(mouseY - 420) <= 10) {
             isDragging = true;
         }
        });
        canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseXMove = e.clientX - rect.left;
+        mouseYMove = e.clientY - rect.top;
         if (isDragging) {
-            const mouseX = e.clientX - canvas.offsetLeft;
-            volume = Math.max(0, Math.min(100, Math.round((mouseX - 435) / 350 * 100)));
+            const mouseXTwo = e.clientX - canvas.offsetLeft;
+            volume = Math.max(0, Math.min(100, Math.round((mouseXTwo - 435) / 350 * 100)));
         }
        });
        canvas.addEventListener('mouseup', () => {
@@ -83,6 +86,11 @@
        });
        canvas.addEventListener('mouseleave', () => {
         isDragging = false;
+       })
+
+       canvas.addEventListener('click', function(event) { //spare/kill
+        mouseX = event.clientX - canvas.getBoundingClientRect().left;
+        mouseY = event.clientY - canvas.getBoundingClientRect().top;
        })
   
        let inventoryElement = document.getElementById("Inventory"); 
@@ -106,6 +114,13 @@
        let bg002 = newImage("bg-2");
        let Girlfriend = newImage("Smurfettebetter1");
        let firstBossSK = newImage("testboss");
+       let wallBossOne = newImage("wall1");
+       let wallBossTwo = newImage("wall2");
+       let wallBossThree = newImage("wall3");
+       let DoorBossOne = newImage("door1");
+       let RespawnStairs = newImage("respawnStairs");
+       let shopDoor = newImage("shopDoor");
+       let shopDoorTwo = newImage("shDoorTwo");
 
        let life = [
             {x:1000, y:560},
@@ -116,6 +131,10 @@
        
        let E = false; 
        let EPush = false;
+       let mouseX;
+       let mouseY;
+       let mouseXMove;
+       let mouseYMove;
   
        let Inventory = [];
        let talk = 0;  
@@ -126,7 +145,8 @@
        let QPush = false; 
        let R = false;
        let RPush = false;
-       let levl = 7; //npc.status --- 0 -- prvni dialog, 2 -- druhý dialog, 3 ---- další level 
+
+       let levl = 2; //npc.status --- 0 -- prvni dialog, 2 -- druhý dialog, 3 ---- další level 
        let gameStatus = 1; //1 - main screen, 2 - hra, 3 - controls, 4 - titulky, 5 - nastaveni 
        let checkpoint = 2;
        let side = 1;
@@ -163,6 +183,8 @@
                  },
                  after2Dialog: function() {
                     respawnAvailable = true;
+                    activeQuest.shift();
+                    activeQuest.push({tl:"Go back to life!"})
                  },
                  loop: function() {},
                 },
@@ -171,7 +193,8 @@
          items: [],
          walls: [],
          bosses: [],
-         respawnPoint: {x:1100, y:300, sx:100, sy:100, targeting: false, sk:tree},
+         respawnPoint: {x:1100, y:300, sx:100, sy:100, targeting: false, sk:RespawnStairs},
+         startLevel: function() {},
          },
          shop: {
             background: Background0,
@@ -194,6 +217,7 @@
          bosses: [],
          door: [],
          backItems: "",
+         startLevel: function() {},
          },
          tutorial: { 
              background: Background1,
@@ -237,6 +261,10 @@
                 newWall(400, 40, 50, 120, tree),
              ],
              bosses: [],
+             startLevel: function() {
+                     level.tutorial.items.push(newItem(1000, 500, 40, 40, woodSK, "Wood", true));   //pushování itemů do items
+                     level.tutorial.items.push(newItem(600, 300, 40, 40, waterSK, "Water", false));
+                  },
          }, 
   
          one: { 
@@ -287,6 +315,9 @@
                 newWall(500, 450, 50, 120, cactus),
              ],
              bosses: [],
+             startLevel: function() {
+                    level.one.items.push(newItem(1000, 500, 40, 40, TankFuel, "Fuel", true));
+                  },
          }, 
          two: { 
              background: Background0,
@@ -331,18 +362,16 @@
                     newWall(410, 340, 50, 120, tree),
              ],
              bosses: [],
+              startLevel: function() {
+                     level.two.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
+                  },
          },
          three: {
             background: Background0,
             npc: [
-            {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [ 
+            {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:2, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
-                             { q: "-- I don't know, how are you, but i am very hungry.", d: "-- Aaaa, There you are. Where have you been?"}, 
-                             { q: "-- Luckily for me, ugh, I mean, us, of course,", d: "-- I am waiting here for like i don't know, hours."}, 
-                             { q: "-- There is an old building with supplies.", d: "-- But, did you found something?"}, 
-                             { q: "-- Go there and bring here something", d: "-- Nice, give it to me, i almost died of hunger."}, 
-                             { q: "-- But be cautious, i don't want anything to happen to you.", d: "-- Thank you very much, now, we can contionue our journey."}, 
-                             { q: "-- But be quick, i am starting starving."}
+                             { q: "This Level is not Done yet, please just click E. It will Push you next.", d: "-- Aaaa, There you are. Where have you been?"}, 
                  ], 
                  draw: function() { 
                      ctx.drawImage(this.sk, this.x, this.y); 
@@ -358,6 +387,9 @@
              items: [],
              walls: [],
              bosses: [],
+             startLevel: function() {
+                level.three.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
+             },
          },
          four: {
             background: bg002,
@@ -392,6 +424,7 @@
                         this.status = 2;
                     }
                   },
+
              },
              {x:900, y:460, sx:32, sy:65, sk:Girlfriend, name:"Girlfriend that looks like Smurfette", LengthOfTalk2: 5, talking: false, targeting: false, status: 0, main: false, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
@@ -450,9 +483,10 @@
              items: [],
              walls: [],
              bosses: [],
-             shopStuff: {door: [{x:725, y:290, sx:50, sy:80}, {x:600, y:520, sx:50, sy:80, loc: 6, locX: 725, locY: 290}], npc: {name:"Lum Beekeeper", sk:LucioSkin, twofunction: function() {this.talking = false; this.status = 0; itemForSaleTest()}},
+             startLevel: function() {},
+             shopStuff: {door: [{x:725, y:290, sx:50, sy:80, sk:shopDoor}, {x:600, y:520, sx:50, sy:80, loc: 6, locX: 725, locY: 290, sk:shopDoorTwo}], npc: {name:"Lum Beekeeper", sk:LucioSkin, twofunction: function() {this.talking = false; this.status = 0; itemForSaleTest()}},
                                      LengthOfTalk2: 3, backItems: function() {
-                                        for (i = 0; i < level.shop.forSale.length; i++) { //////////////////////////cela tahle funkce je rozbita
+                                        for (i = 0; i < level.shop.forSale.length; i++) { 
                                             level.four.shopStuff.items[i].buy = level.shop.forSale[i].buy;
                                         }
                                      },
@@ -482,9 +516,10 @@
         five: {
             background: bg002,
              npc: [ 
-                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:1, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [ 
+                 {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:3, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, oneOne: true, LengthOfTalk2: 3, speech: [ 
                          { q: "", d: ""}, 
-                         { q: "", d: ""},
+                         { q: "-- Oh No, That Bird stole my car Keys, we cannot go further.", d: ""},
+                         { q: "-- Go! Bring them back! There you have knife, if needed.", d: ""}
                  ],  
                  draw: function() { 
                      ctx.drawImage(this.sk, this.x, this.y); 
@@ -492,7 +527,11 @@
                  after1Dialog: function() {
                     activeQuest.shift();
                     activeQuest.push({tl:"Fight!"});
-                    term1 = true;
+                    if (this.oneOne) {
+                        aktive.walls.pop();
+                        this.oneOne = false;
+                    }
+                    this.term1 = true;
                  },
                  after2Dialog: function() {
                     this.term1 = false;
@@ -507,19 +546,25 @@
              enemies: [], 
              items: [],
              walls: [
-                    newWall(550, 0, 80, 220, tree),
-                    newWall(0, 200, 400, 20, tree),
-                    newWall(780, 200, 420, 20, tree),
+                    newWall(550, 0, 80, 220, wallBossOne),
+                    newWall(0, 200, 400, 20, wallBossTwo),
+                    newWall(780, 200, 420, 20, wallBossThree),
+                    newWall(401, 200, 148, 30, DoorBossOne),
              ],
-             bosses: [{x:850, y:80, sx:100, sy:100, sk:firstBossSK, name:"boss1", targeting: false, arenaStart: false,
+             bosses: [{x:850, y:80, sx:100, sy:100, sk:"Black", name:"boss1", targeting: false, arenaStart: false, decision: false, spared: false, trueDecision: false, talking: false, alreadySpoke: false, secondTalk: false,
+                        speech: [
+                            { q: "", d: ""},
+                            { q: "-- Oh, please, don't kill me.", d: "-- God bless you for your kindness!"},
+                            { q: "-- I didn't know it's not food.", d: "-- And curse you for your foolness!"}
+                        ],
                        draw: function() {
                         //ctx.drawImage(this.sk, this.x, this.y);
-                        ctx.fillStyle = "Black";
+                        ctx.fillStyle = this.sk;
                         ctx.fillRect(this.x, this.y, this.sx, this.sy);
                        }, arenaWalls: function () {
                         if (player.y >= 225 && this.arenaStart == false) {
-                            aktive.walls.push(newWall(401, 200, 148, 20, tree));
-                            aktive.walls.push(newWall(631, 200, 148, 20, tree));
+                            aktive.walls.push(newWall(401, 200, 148, 30, DoorBossOne));
+                            aktive.walls.push(newWall(631, 200, 148, 30, DoorBossOne));
                             this.arenaStart = true;
                         }
                        },
@@ -530,20 +575,80 @@
                             aktive.enemies.push(newEnemy(100, 470, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
                             aktive.enemies.push(newEnemy(700, 470, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
                             aktive.enemies.push(newEnemy(700, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 3, 2, 221, canvas.height, 0, canvas.width));
-                            aktive.enemies.push(newEnemy(700, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 3, 2, 221, canvas.height, 0, canvas.width));
+                            aktive.enemies.push(newEnemy(600, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 3, 2, 221, canvas.height, 0, canvas.width));
+                                
+                            setTimeout(function(){ aktive.enemies = []; 
+                                setTimeout(function() {
+                                aktive.enemies.push(newEnemy(1, 300, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 4, 2, 221, canvas.height, 0, canvas.width));
+                                aktive.enemies.push(newEnemy(1, 400, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 4, 2, 221, canvas.height, 0, canvas.width));
+                                aktive.enemies.push(newEnemy(canvas.width - 120, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 4, 2, 221, canvas.height, 0, canvas.width));
+                                aktive.enemies.push(newEnemy(canvas.width - 120, 500, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 4, 2, 221, canvas.height, 0, canvas.width));
+                                    setTimeout(function() {
+                                     aktive.enemies = [];
+                                        setTimeout(function() {
+                                       aktive.enemies.push(newEnemy(0, 470, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
+                                       aktive.enemies.push(newEnemy(100, 220, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
+                                       aktive.enemies.push(newEnemy(1000, 380, 100, 50, false, 0, "Black", 4, 1, 0, 0, 0, 0));
+                                       aktive.enemies.push(newEnemy(200, 380, 100, 50, false, 0, "Black", 6, 1, 0, 0, 0, 0));
+                                       aktive.enemies.push(newEnemy(300, 470, 100, 50, false, 0, "Black", 6, 1, 0, 0, 0, 0));
+                                       aktive.enemies.push(newEnemy(900, 220, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
+                                          setTimeout(function() { 
+                                              aktive.enemies = []; 
+                                                aktive.walls.pop()
+                                        }, 2000)       
+                                        }, 3000)
+                                }, 5000);
+                                }, 2000);
+                            }, 3000); //35000, 25000, 10000
                             this.arenaFight = function(){};
                         }
-                    } }],
+                    },
+                    bossHit: function() {
+                        EPush = true;
+                        if (this.trueDecision == false && this.alreadySpoke == false) {
+                        player.fr = true;
+                        this.talking = true;
+                        talk = 1;
+                        this.alreadySpoke = true;
+                    }
+                    },
+                    bossSpared: function() {
+                        mouseX = 0;
+                        mouseY = 0;
+                        boss.decision = false;
+                        boss.spared = true;
+                        aktive.walls.pop();
+                        activeQuest.shift();
+                        activeQuest.push(({tl:"Go back to Lucio"}));
+                        aktive.npc[0].term2 = true;
+                        aktive.npc[0].speech[1].d = "-- Yay, There you are.";
+                        aktive.npc[0].speech[2].d = "-- I am happy that you're not hurt. Can we go?";
+                        this.secondTalk = true;
+                        this.talking = true;
+                        talk = 1;
+                    },
+                    bossNotSpared: function() {
+                        mouseX = 0;
+                        mouseY = 0;
+                        boss.sk = "red";
+                        boss.decision = false;
+                        boss.spared = false;
+                        aktive.walls.pop();
+                        activeQuest.shift();
+                        activeQuest.push(({tl:"Go back to Lucio"}))
+                        aktive.npc[0].term2 = true;
+                        aktive.npc[0].speech[1].d = "-- Goooood, good, now we can go on.";
+                        aktive.npc[0].speech[2].d = "-- Are you ready?";
+                        this.secondTalk = true;
+                        talk = 1;
+                        this.talking = true;
+                    },
+                }],
+             startLevel: function() {},       
          }
     }
   
-       level.tutorial.items.push(newItem(1000, 500, 40, 40, woodSK, "Wood", true));   //pushování itemů do items
-       level.tutorial.items.push(newItem(600, 300, 40, 40, waterSK, "Water", false));
-       level.one.items.push(newItem(1000, 500, 40, 40, TankFuel, "Fuel", true)); 
-       level.two.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
-       level.three.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
-  
-       let active = level.five; 
+       let active = level.tutorial; 
        let aktive;
   
        let sentence = ""; 
@@ -684,9 +789,6 @@
   
              if (event.code == "KeyQ") { //Q
                  Q = true; 
-                 if (gameStatus == 1 || gameStatus == 5) {
-                    gameStatus = 3;
-              }
              } 
 
              if (event.code == "KeyR") { //R
@@ -700,18 +802,15 @@
                     played = true;
                     aktive = active;
                     alreadyPushLevel = true;
+                    aktive.startLevel();
                 }
              }}
 
              if (event.code == "KeyM") { //M
+                if (gameStatus == 2) {
                     gameStatus = 1;
+                }
              }
-
-             if (event.code == "KeyO") { //O
-                if (gameStatus == 1) {
-                    gameStatus = 5;
-             }
-            }
          } 
   
          function onKeyUp() {        //klávesy 2 
@@ -755,8 +854,40 @@
             text("30px Lucida sans", "black", "center", 610, 400, "Press 'SPACE' to start the Game");
             text("35px Lucida sans", "black", "center", 610, 290, "Main Menu");
             }
-            text("30px Lucida sans", "black", "center", 610, 450, "Press 'Q' to see Controls");
-            text("30px Lucida sans", "black", "center", 610, 500, "Press 'O' to Options");
+
+            if (isMouseOverButton(410, 440, 150, 60)) {
+                ctx.fillStyle = "#242424";
+            } else {
+                ctx.fillStyle = "#5c5c5c";
+            }
+            ctx.fillRect(410, 440, 150, 60);
+
+            if (isMouseOverButton(660, 440, 150, 60)) {
+                ctx.fillStyle = "#242424";
+            } else {
+                ctx.fillStyle = "#5c5c5c";
+            }
+            ctx.fillRect(660, 440, 150, 60);
+            
+            text("30px Lucida sans", "Black", "center", 485, 480, "Options");
+            text("30px Lucida sans", "Black", "center", 735, 480, "Controls");
+            ctx.strokeStyle = "660000";
+            ctx.lineWidth = 5;
+            ctx.strokeRect(410, 440, 150, 60);
+            ctx.strokeRect(660, 440, 150, 60);
+
+            if (mouseX >= 410 && mouseX <= 410 + 150 && mouseY >= 440 && mouseY <= 440 + 60) {
+                gameStatus = 5;
+                mouseX = 0;
+                mouseY = 0;
+            }
+
+            if (mouseX >= 660 && mouseX <= 660 + 150 && mouseY >= 440 && mouseY <= 440 + 60) {
+                gameStatus = 3;
+                mouseX = 0;
+                mouseY = 0;
+            }
+
             inventoryElement.innerHTML = "You have no bag";
         } else if (gameStatus == 3) { //controls
             menus();
@@ -765,12 +896,43 @@
             text("30px Lucida sans", "black", "center", 610, 420, "Hold R to see Quest list");
             text("30px Lucida sans", "black", "center", 610, 460, "To Interact Press 'E'");
             text("30px Lucida sans", "black", "center", 610, 500, "You have only 1 place in Bag");
-            text("30px Lucida sans", "black", "center", 610, 540, "Press 'M' to see Main Menu");
+
+            if (isMouseOverButton(410, 508, 150, 35)) {
+                ctx.fillStyle = "#242424";
+            } else {
+                ctx.fillStyle = "#5c5c5c";
+            }
+            ctx.fillRect(410, 508, 150, 35);
+
+            if (isMouseOverButton(660, 508, 150, 35)) {
+                ctx.fillStyle = "#242424";
+            } else {
+                ctx.fillStyle = "#5c5c5c";
+            }
+            ctx.fillRect(660, 508, 150, 35);
+            
+            text("30px Lucida sans", "Black", "center", 485, 535, "Menu");
+            text("30px Lucida sans", "Black", "center", 735, 535, "Options");
+            ctx.strokeStyle = "660000";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(410, 508, 150, 35);
+            ctx.strokeRect(660, 508, 150, 35);
+
+            if (mouseX >= 410 && mouseX <= 410 + 150 && mouseY >= 508 && mouseY <= 508 + 35) {
+                gameStatus = 1;
+            }
+
+            if (mouseX >= 660 && mouseX <= 660 + 150 && mouseY >= 508 && mouseY <= 508 + 35) {
+                gameStatus = 5;
+            }
+
             inventoryElement.innerHTML = "You have no bag";
         } else if (gameStatus == 2) { //hra
          if (alreadyPushLevel == false) {
             aktive = active;
             alreadyPushLevel = true;
+            aktive.items = [];
+            aktive.startLevel();
          }   
          ctx.drawImage(aktive.background, 0, 0); 
   
@@ -780,12 +942,23 @@
          placeItem(); //pokladani objektu
          lifes(); //zivoty
          shopping(); //obhod
-         bossFight();
          respawn();
 
          for (npc of aktive.npc) {
             npc.draw();
             npc.loop();
+        }
+
+        if (levl == 6) {//dvere do shopu
+            ctx.drawImage(level.four.shopStuff.door[0].sk, level.four.shopStuff.door[0].x, level.four.shopStuff.door[0].y);
+        } 
+
+        if (levl == 1) {
+            ctx.drawImage(level.four.shopStuff.door[1].sk, level.four.shopStuff.door[1].x, level.four.shopStuff.door[1].y);
+        }
+
+        if (aktive == level.GameOver) {
+            ctx.drawImage(aktive.respawnPoint.sk, aktive.respawnPoint.x, aktive.respawnPoint.y);
         }
 
         frame++;
@@ -836,7 +1009,8 @@
         QuestListField(); //questy
         Controls();  //controls 
         CooperatingWithNPC(); //npc veci
-
+        bossFight();
+        console.log(talk);
          if (levl == 0) active = level.GameOver;
          if (levl == 1) active = level.shop; 
          if (levl == 2) active = level.tutorial; 
@@ -845,6 +1019,7 @@
          if (levl == 5) active = level.three;
          if (levl == 6) active = level.four;
          if (levl == 7) active = level.five;
+         if (levl == 8) gameStatus = 4;
          
         if (active == level.four) {
             checkpoint = levl;
@@ -911,13 +1086,47 @@
             menus();
             text("35px Lucida sans", "black", "center", 610, 290, "Options");
             text("30px Lucida sans", "black", "center", 610, 400, "Volume:");
-            ctx.fillStyle = "Blue";
-            ctx.fillRect(435, 450, 350, 20);
-            ctx.fillStyle = "Red";
+            ctx.fillStyle = "#5c5c5c";
+            ctx.fillRect(435, 420, 350, 20);
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = "#660000";
+            ctx.strokeRect(410, 480, 150, 60);
+            ctx.strokeRect(660, 480, 150, 60);
+            ctx.lineWidth = 3;
+            ctx.strokeRect(435, 420, 350, 20);
+            ctx.fillStyle = "#000000";
             ctx.beginPath();
-            ctx.arc(knobX, 460, 10, 0, 2 * Math.PI);
+            ctx.arc(knobX, 430, 10, 0, 2 * Math.PI);
             ctx.fill();
-            text("30px Lucida sans", "black", "center", 610, 540, "Press 'M' to see Main Menu");
+
+            if (mouseX >= 410 && mouseX <= 410 + 150 && mouseY >= 480 && mouseY <= 480 + 60) {
+                mouseX = 0;
+                mouseY = 0;
+                gameStatus = 3;
+            }
+
+            if (mouseX >= 660 && mouseX <= 660 + 150 && mouseY >= 480 && mouseY <= 480 + 60) {
+                mouseX = 0;
+                mouseY = 0;
+                gameStatus = 1;
+            }
+
+            if (isMouseOverButton(410, 480, 150, 60)) {
+                ctx.fillStyle = "#242424";
+            } else {
+                ctx.fillStyle = "#5c5c5c";
+            }
+            ctx.fillRect(410, 480, 150, 60);
+
+            if (isMouseOverButton(660, 480, 150, 60)) {
+                ctx.fillStyle = "#242424";
+            } else {
+                ctx.fillStyle = "#5c5c5c";
+            }
+            ctx.fillRect(660, 480, 150, 60);
+
+            text("30px Lucida sans", "Black", "center", 485, 515, "Controls");
+            text("30px Lucida sans", "Black", "center", 735, 515, "Menu");
         }
      } 
 
@@ -1015,7 +1224,35 @@
                  activeQuest.shift();
              } }
          } 
-     }} 
+     }
+     for (boss of aktive.bosses) {              //mluveni bosse
+        if (boss.talking == true && talk > 0 && boss.decision == false && boss.secondTalk == false) {
+            if (talk < boss.speech.length) sentence = boss.speech[talk].q;
+            if (talk == boss.speech.length) {sentence = boss.speech[0].q; boss.talking = false; talk = 0; boss.decision = true;}
+        }
+
+        if (boss.talking) text("18px Lucida Sans", "Black", "left", 300, 580, sentence);
+
+        if (E == true && EPush == false && boss.talking == true && talk > 0) {
+            talk++;
+            EPush = true;
+        }
+
+        if (boss.talking == true && boss.secondTalk == true && boss.decision == false && talk > 0) {
+            if (talk < boss.speech.length) sentence = boss.speech[talk].d;
+            if (talk == boss.speech.length) {sentence = boss.speech[0].d; boss.talking = false; talk = 0; player.fr = false; boss.trueDecision = true;} 
+        }
+     }
+    } 
+
+    function isMouseOverButton(bttX, bttY, bttSx, bttSy) {
+        return (
+            mouseXMove >= bttX &&
+            mouseXMove <= bttX + bttSx &&
+            mouseYMove >= bttY &&
+            mouseYMove <= bttY + bttSy
+        );
+    }
      
      function walletText() {
         ctx.fillStyle = "white";
@@ -1168,7 +1405,19 @@
                 ctx.strokeRect(238, 540, 700, 60);
                 text("25px Belanosima", "black", "left", 260, 562, npc.name);
             }
-        }}
+        }
+        for (boss of aktive.bosses) {
+            if (boss.talking) {
+                ctx.fillStyle = "#cccccc";
+                ctx.fillRect(238, 540, 700, 60);
+
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "Black";
+                ctx.strokeRect(238, 540, 700, 60);
+                text("28px Belanosima", "black", "left", 260, 562, boss.name);
+            }
+        }
+    }
   
         function lifes() {
             for (lf of life) {
@@ -1243,7 +1492,51 @@
             }
             boss.arenaWalls();
             boss.arenaFight();
-        }
+
+             if (boss.targeting && E && !EPush) {
+                  boss.bossHit();
+                }
+
+                if (boss.decision) {
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(200, 100, 800, 400);
+
+                    if (isMouseOverButton(350, 390, 100, 50)) {
+                           ctx.fillStyle = "#242424";
+                    } else {
+                        ctx.fillStyle = "#5c5c5c";
+                    }
+                    ctx.fillRect(350, 390, 100, 50); //350, 390, 100, 50 btt
+
+                     if (isMouseOverButton(750, 390, 100, 50)) {
+                        ctx.fillStyle = "#242424";
+                    } else {
+                        ctx.fillStyle = "#5c5c5c";
+                    }
+                    ctx.fillRect(750, 390, 100, 50); //750, 390, 100, 50, btt2
+
+                    
+                    ctx.strokeStyle = "#660000";
+                    ctx.lineWidth = 5;
+                    ctx.strokeRect(200, 100, 800, 400);
+                    text("40px Lucida sans", "Black", "center", 600, 200, "Do you want to spare his Life or Kill him?")
+                    text("30px Lucida sans", "Black", "center", 400, 350, "Spare his Life");
+                    text("30px Lucida sans", "Black", "center", 800, 350, "Kill him");
+                    
+                    ctx.strokeStyle = "Black";
+                    ctx.lineWidth = 5;
+                    ctx.strokeRect(350, 390, 100, 50);
+                    ctx.strokeRect(750, 390, 100, 50);
+
+                    if (mouseX >= 350 && mouseX <= 350 + 100 && mouseY >= 390 && mouseY <= 390 + 50) {
+                        boss.bossSpared();
+                      }
+
+                     if (mouseX >= 750 && mouseX <= 750 + 100 && mouseY >= 390 && mouseY <= 390 + 50) {
+                        boss.bossNotSpared();
+                     }
+                }
+            }
      }
 
      function itemForSaleTest() {

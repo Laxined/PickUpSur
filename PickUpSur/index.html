@@ -56,19 +56,20 @@
      <h3>Game by Laxined © 2023</h3>
      </div>
  </body> 
+ <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
  <script> 
-       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku, pridat meneni hudby
-       var ctx = canvas.getContext("2d");                    /////////////////////////////////////////udelat vice levelu, new Game button
+       var canvas = document.getElementById("myCanvas");     /////////////////////////////////////////dodelat grafiku, pridat meneni hudby, upravit kolizi zdi- hrany, back to game
+       var ctx = canvas.getContext("2d");                    /////////////////////////////////////////new Game button
                                                              /////////////////////////////////////////chodit nahoru dolu anizby to ovlivnilo sikmo
        window.addEventListener('keydown', this.onKey, false); 
-       window.addEventListener('keyup', this.onKeyUp, false); 
+       window.addEventListener('keyup', this.onKeyUp, false);
 
        canvas.addEventListener('mousedown', (e) => { //mys pro zvuk
-        const knobX = 435 + (trackWidth * volume) / 100;
+        const knobX = 440 + (trackWidth * volume) / 100;
         const mouseX = e.clientX - canvas.offsetLeft;
         const mouseY = e.clientY - canvas.offsetTop;
 
-        if (Math.abs(mouseX - knobX) <= 10 && Math.abs(mouseY - 420) <= 10) {
+        if (Math.abs(mouseX - knobX) <= 10 && Math.abs(mouseY - 435) <= 10) {
             isDragging = true;
         }
        });
@@ -165,6 +166,7 @@
        let level = { 
          GameOver: {
             background: Background0,
+            bossfightlevel: false,
              npc: [
                 {x:568, y:235, sx:54, sy:103, sk:YenaSkin, name: "Yena", LengthOfTalk2:6, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [
                                 { q: "", d: ""},
@@ -194,10 +196,10 @@
          walls: [],
          bosses: [],
          respawnPoint: {x:1100, y:300, sx:100, sy:100, targeting: false, sk:RespawnStairs},
-         startLevel: function() {},
          },
          shop: {
             background: Background0,
+            bossfightlevel: false,
              npc: [
                 {x:568, y:235, sx:32, sy:65, sk:"", name: "", LengthOfTalk2:"", talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [],
                 draw: function() {
@@ -217,10 +219,10 @@
          bosses: [],
          door: [],
          backItems: "",
-         startLevel: function() {},
          },
          tutorial: { 
              background: Background1,
+             bossfightlevel:false,
               npc: [ 
                  {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:3, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
@@ -237,7 +239,7 @@
                     this.term1 = true;
                     activeQuest.shift();
                     activeQuest.push({tl:"Find and bring wood"});
-                    for (item of active.items) {
+                    for (item of aktive.items) {
                         item.take = true;
                      }},
                  after2Dialog: function() {
@@ -261,14 +263,11 @@
                 newWall(400, 40, 50, 120, tree),
              ],
              bosses: [],
-             startLevel: function() {
-                     level.tutorial.items.push(newItem(1000, 500, 40, 40, woodSK, "Wood", true));   //pushování itemů do items
-                     level.tutorial.items.push(newItem(600, 300, 40, 40, waterSK, "Water", false));
-                  },
          }, 
   
          one: { 
              background: Background2,
+             bossfightlevel: false,
              npc: [ 
                  {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:4, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                          { q: "", d: ""}, 
@@ -284,7 +283,7 @@
                  after1Dialog: function() {
                     activeQuest.shift();
                     activeQuest.push({tl:"Find and bring Fuel"});
-                    for (item of active.items) {
+                    for (item of aktive.items) {
                         item.take = true;
                      }
                      this.term1 = true;
@@ -315,12 +314,10 @@
                 newWall(500, 450, 50, 120, cactus),
              ],
              bosses: [],
-             startLevel: function() {
-                    level.one.items.push(newItem(1000, 500, 40, 40, TankFuel, "Fuel", true));
-                  },
          }, 
          two: { 
              background: Background0,
+             bossfightlevel: false,
              npc: [ 
                  {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:6, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
@@ -337,7 +334,7 @@
                  after1Dialog: function() {
                     activeQuest.shift();
                     activeQuest.push({tl:"Find and bring Suplies"});
-                    for (item of active.items) {
+                    for (item of aktive.items) {
                         item.take = true;
                      }
                      this.term1 = true;
@@ -362,12 +359,10 @@
                     newWall(410, 340, 50, 120, tree),
              ],
              bosses: [],
-              startLevel: function() {
-                     level.two.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
-                  },
          },
          three: {
             background: Background0,
+            bossfightlevel: false,
             npc: [
             {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:2, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
@@ -387,12 +382,10 @@
              items: [],
              walls: [],
              bosses: [],
-             startLevel: function() {
-                level.three.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
-             },
          },
          four: {
             background: bg002,
+            bossfightlevel: false,
             npc: [
             {x:150, y:120, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:2, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, speech: [ 
                              { q: "", d: ""}, 
@@ -411,8 +404,8 @@
                  after1Dialog: function() {
                     activeQuest.shift();
                     activeQuest.push({tl:"Talk to your dad."});
-                    active.npc[2].term1 = true;
-                    active.npc[1].term1 = true;
+                    aktive.npc[2].term1 = true;
+                    aktive.npc[1].term1 = true;
                     this.term1 = true;
                  },
                  after2Dialog: function() {
@@ -460,10 +453,11 @@
                     this.term2 = true;
                  },
                  after2Dialog: function() {
-                    active.npc[0].term2 = true;
+                    aktive.npc[0].term2 = true;
                     activeQuest.shift();
                     if (this.first == false) {
                     wallet += 10;
+                    level.four.npc[2].first = true;
                     this.first = true;
                     }
                  },
@@ -483,11 +477,10 @@
              items: [],
              walls: [],
              bosses: [],
-             startLevel: function() {},
              shopStuff: {door: [{x:725, y:290, sx:50, sy:80, sk:shopDoor}, {x:600, y:520, sx:50, sy:80, loc: 6, locX: 725, locY: 290, sk:shopDoorTwo}], npc: {name:"Lum Beekeeper", sk:LucioSkin, twofunction: function() {this.talking = false; this.status = 0; itemForSaleTest()}},
                                      LengthOfTalk2: 3, backItems: function() {
                                         for (i = 0; i < level.shop.forSale.length; i++) { 
-                                            level.four.shopStuff.items[i].buy = level.shop.forSale[i].buy;
+                                            level.four.shopStuff.items[i].buy = aktive.forSale[i].buy;
                                         }
                                      },
                          speech: [{ q: "", d: ""},
@@ -515,6 +508,7 @@
         },
         five: {
             background: bg002,
+            bossfightlevel: true,
              npc: [ 
                  {x:50, y:75, sx:32, sy:65, sk:LucioSkin, name:"Lucio", LengthOfTalk2:3, talking: false, targeting: false, status: 0, main: true, term1: false, term2: false, oneOne: true, LengthOfTalk2: 3, speech: [ 
                          { q: "", d: ""}, 
@@ -551,7 +545,7 @@
                     newWall(780, 200, 420, 20, wallBossThree),
                     newWall(401, 200, 148, 30, DoorBossOne),
              ],
-             bosses: [{x:850, y:80, sx:100, sy:100, sk:"Black", name:"boss1", targeting: false, arenaStart: false, decision: false, spared: false, trueDecision: false, talking: false, alreadySpoke: false, secondTalk: false,
+             bosses: [{x:850, y:80, sx:100, sy:100, sk:"Black", name:"Joe The Bird", targeting: false, arenaStart: false, decision: false, spared: false, trueDecision: false, talking: false, alreadySpoke: false, secondTalk: false,
                         speech: [
                             { q: "", d: ""},
                             { q: "-- Oh, please, don't kill me.", d: "-- God bless you for your kindness!"},
@@ -576,16 +570,19 @@
                             aktive.enemies.push(newEnemy(700, 470, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
                             aktive.enemies.push(newEnemy(700, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 3, 2, 221, canvas.height, 0, canvas.width));
                             aktive.enemies.push(newEnemy(600, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 3, 2, 221, canvas.height, 0, canvas.width));
-                                
-                            setTimeout(function(){ aktive.enemies = []; 
+                            
+                            setTimeout(function(){ if (levl == 7) {aktive.enemies = [];} 
                                 setTimeout(function() {
+                                    if (levl == 7) {
                                 aktive.enemies.push(newEnemy(1, 300, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 4, 2, 221, canvas.height, 0, canvas.width));
                                 aktive.enemies.push(newEnemy(1, 400, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 4, 2, 221, canvas.height, 0, canvas.width));
                                 aktive.enemies.push(newEnemy(canvas.width - 120, 470, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 4, 2, 221, canvas.height, 0, canvas.width));
                                 aktive.enemies.push(newEnemy(canvas.width - 120, 500, 100, 50, false, Math.PI * 2 * Math.random(), "Black", 4, 2, 221, canvas.height, 0, canvas.width));
                                     setTimeout(function() {
-                                     aktive.enemies = [];
+                                        if (levl == 7) {
+                                     aktive.enemies = [];}
                                         setTimeout(function() {
+                                            if (levl == 7) {
                                        aktive.enemies.push(newEnemy(0, 470, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
                                        aktive.enemies.push(newEnemy(100, 220, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
                                        aktive.enemies.push(newEnemy(1000, 380, 100, 50, false, 0, "Black", 4, 1, 0, 0, 0, 0));
@@ -593,13 +590,14 @@
                                        aktive.enemies.push(newEnemy(300, 470, 100, 50, false, 0, "Black", 6, 1, 0, 0, 0, 0));
                                        aktive.enemies.push(newEnemy(900, 220, 100, 50, false, 0, "Black", 5, 1, 0, 0, 0, 0));
                                           setTimeout(function() { 
+                                            if (levl == 7) {
                                               aktive.enemies = []; 
-                                                aktive.walls.pop()
-                                        }, 2000)       
+                                                aktive.walls.pop();}
+                                        }, 15000)}       
                                         }, 3000)
-                                }, 5000);
-                                }, 2000);
-                            }, 3000); //35000, 25000, 10000
+                                }, 20000);}
+                                }, 3000);
+                            }, 20000); //35000, 25000, 20000
                             this.arenaFight = function(){};
                         }
                     },
@@ -643,13 +641,18 @@
                         talk = 1;
                         this.talking = true;
                     },
-                }],
-             startLevel: function() {},       
+                }], 
          }
     }
+
+    level.tutorial.items.push(newItem(1000, 500, 40, 40, woodSK, "Wood", true));   //pushování itemů do items
+    level.tutorial.items.push(newItem(600, 300, 40, 40, waterSK, "Water", false));
+    level.one.items.push(newItem(1000, 500, 40, 40, TankFuel, "Fuel", true));
+    level.two.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
+    level.three.items.push(newItem(1000, 500, 40, 40, SuppliesSK, "Supplies", true)); 
   
-       let active = level.tutorial; 
-       let aktive;
+       let active = level.tutorial;
+       let aktive = {};
   
        let sentence = ""; 
 
@@ -665,7 +668,7 @@
          {x:1190, y:116, al:"19px Lucida sans", tl:"To pick up something press 'E'"}, 
          {x:1190, y:142, al:"19px Lucida sans", tl:"You can have only 1 thing in Inventory."}, 
          {x:1190, y:170, al:"19px Lucida sans", tl:"To see your quest hold 'R'."},
-         {x:1190, y:198, al:"19px Lucisa sans", tl:"To pause press 'M'"},
+         {x:1190, y:198, al:"19px Lucida sans", tl:"To pause press 'M'"},
        ] 
 
        let credits = [
@@ -673,7 +676,7 @@
         {y:430, tx: "Music by T_en_M", st: 2},
         {y:470, tx: "Story by Laxined", st: 2},
         {y:510, tx: "Grafic and Design made by Laxined", st: 2},
-        {y:550, tx: "Beta testing by VultarexCZ, Valerie V.", st: 2},
+        {y:550, tx: "Beta testing by Valerie Vojíková", st: 2},
         {y:390, tx: "Special Thanks: Arnost K.", st: 3},
         {y:390, tx: "Full version will be available soon.", st: 4},
         {y:430, tx: "Looking for a Stuff.", st: 4},
@@ -796,13 +799,16 @@
              }
 
              if (event.code == "Space") {   //mezernik
-                if (gameStatus == 1 || gameStatus == 5) {
-                    gameStatus = 2;
+                if (gameStatus == 1) {
                     if (played == false && alreadyPushLevel == false) {
                     played = true;
-                    aktive = active;
+                    aktive = _.cloneDeep(level.tutorial);
                     alreadyPushLevel = true;
-                    aktive.startLevel();
+                    gameStatus = 2;
+                }
+                 else {
+                    gameStatus = 2;
+                    alreadyPushLevel = true;
                 }
              }}
 
@@ -929,11 +935,9 @@
             inventoryElement.innerHTML = "You have no bag";
         } else if (gameStatus == 2) { //hra
          if (alreadyPushLevel == false) {
-            aktive = active;
+            aktive = _.cloneDeep(active);
             alreadyPushLevel = true;
-            aktive.items = [];
-            aktive.startLevel();
-         }   
+         }  
          ctx.drawImage(aktive.background, 0, 0); 
   
          enemyMovement();  //hybani random enemy  
@@ -1006,11 +1010,10 @@
         }
         walletText();
         talkingField(); //pole na mluveni
-        QuestListField(); //questy
-        Controls();  //controls 
         CooperatingWithNPC(); //npc veci
         bossFight();
-        console.log(talk);
+        QuestListField(); //questy
+        Controls();  //controls 
          if (levl == 0) active = level.GameOver;
          if (levl == 1) active = level.shop; 
          if (levl == 2) active = level.tutorial; 
@@ -1267,6 +1270,7 @@
         if (active == level.four) {
             if (E == true && EPush == false) {
                 if (collision(player.x, aktive.shopStuff.door[0].x, player.sx, aktive.shopStuff.door[0].sx, 0) && collision(player.y, aktive.shopStuff.door[0].y, player.sy, aktive.shopStuff.door[0].sy, 0)) {
+                    level.four = aktive;
                     alreadyPushLevel = false;
                     EPush = true;
                     levl = 1;
